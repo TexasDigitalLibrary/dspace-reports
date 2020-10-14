@@ -21,13 +21,13 @@ class Indexer(object):
 
         # Create REST API object
         self.rest = DSpaceRestApi(rest_server=config['rest_server'])
-        if self.rest is False:
+        if self.rest is None:
             self.logger.error("Unable to create Indexer due to earlier failures creating a connection to the REST API.")
             sys.exit(1)
 
         # Create Solr server object
         self.solr = DSpaceSolr(solr_server=config['solr_server'])
-        if self.solr is False:
+        if self.solr is None:
             self.logger.error("Unable to create Indexer due to earlier failures creating a connection to Solr.")
             sys.exit(1)
 
