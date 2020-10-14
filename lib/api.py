@@ -28,6 +28,8 @@ class DSpaceRestApi(object):
         
         # Authenticate using parameters in configuration
         authenticated = self.authenticate()
+        if authenticated is False:
+            return False
 
         # Test connection to REST API
         self.test_connection()
@@ -41,8 +43,10 @@ class DSpaceRestApi(object):
         # Attempt to log in to REST API
         login_url = self.construct_url(command = 'login')
         login_response = requests.post(login_url, headers=self.headers, data=data)
+        self.logger.info("Calling REST API: %s" %(login_response.url))
 
         if login_response.status_code == 200:
+            self.logger.info("Successfully authenticated: %s" %(str(login_response.status_code)))
             self.logger.info(login_response.cookies)
             if 'JSESSIONID' in login_response.cookies:
                 self.logger.info("Received session ID: %s" %(login_response.cookies['JSESSIONID']))
@@ -53,7 +57,7 @@ class DSpaceRestApi(object):
                 self.logger.info("No session ID in response.")
                 return False
         else:
-            self.logger.info("REST API authentication failed.")
+            self.logger.info("REST API authentication failed: %s" %(str(login_response.status_code)))
             self.logger.info(login_response.text)
             return False
 
