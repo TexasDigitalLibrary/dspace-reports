@@ -1,0 +1,11 @@
+__pycache__
+venv
+
+# Configuration
+config/*.yml
+
+# Logs
+/logs/*
+
+# VS Code
+*.code-workspace

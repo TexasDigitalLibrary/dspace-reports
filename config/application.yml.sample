@@ -1,0 +1,18 @@
+solr_server: 'http://localhost:8080/solr'
+rest_server: 'http://localhost:8080/rest'
+dspace_server: 'http://localhost:8080'
+dspace_name: 'MyDSpace'
+statistics_db:
+    host: 'localhost'
+    port: '5432'
+    name: 'dspace_statistics'
+    username: 'dspace_statistics'
+    password: 'dspace_statistics'
+work_dir: '/tmp'
+log_path: 'logs'
+log_file: 'statistics-reports.log'
+log_level: 'INFO'
+from_email: 'admin@example.org'
+admin_emails:
+        - email1
+        - email2
