@@ -84,9 +84,6 @@ def main():
     if output_dir_exists is False:
         sys.exit(0)
 
-    # Create database manager
-    database_manager = DatabaseManager(config=config)
-
     # Create stats indexer
     indexer = RunCommunityIndexer(config=config)
     
