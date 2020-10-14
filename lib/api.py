@@ -8,22 +8,63 @@ import xml.etree.ElementTree as ET
 
 class DSpaceRestApi(object):
     def __init__(self, rest_server=None):
-        # Ensure rest_server has trailing slash
-        if rest_server[len(rest_server)-1] != '/':
-            self.rest_server = rest_server + '/'
+        # Ensure URL of rest_server has trailing slash
+        url = rest_server['url']
+        if url[len(url)-1] != '/':
+            self.url = url + '/'
         else:
-            self.rest_server = rest_server
+            self.url = url
+
+        self.username = rest_server['username']
+        self.password = rest_server['password']
+        self.session_id = None
 
         self.limit = 100
         self.headers = {'Accept': 'application/json'}
+        self.cookies = {}
+
         self.logger = logging.getLogger('dspace-reports')
-        self.logger.debug("Connecting to DSpace REST API:  %s.", self.rest_server)
+        self.logger.debug("Connecting to DSpace REST API:  %s.", self.url)
+        
+        # Authenticate using parameters in configuration
+        authenticated = self.authenticate()
+
+        # Test connection to REST API
         self.test_connection()
 
+    def authenticate(self):
+        self.logger.debug("Authenticating connection to REST API")
+       
+       # Create data dictionary
+        data = {'email':self.username, 'password':self.password}
+        
+        # Attempt to log in to REST API
+        login_url = self.construct_url(command = 'login')
+        login_response = requests.post(login_url, headers=self.headers, data=data)
+
+        if login_response.status_code == 200:
+            self.logger.debug(login_response.cookies)
+            if 'JSESSIONID' in login_response.cookies:
+                self.logger.debug("Received session ID: %s" %(login_response.cookies['JSESSIONID']))
+                self.session_id = login_response.cookies['JSESSIONID']
+                self.cookies = {'JSESSIONID':self.session_id}
+                return True
+            else:
+                self.logger.debug("No session ID in response.")
+                return False
+        else:
+            self.logger.debug("REST API authentication failed.")
+            self.logger.debug(login_response.text)
+            return False
+
     def test_connection(self):
-        url = self.rest_server + 'status'
-        self.logger.debug("Testing REST API connection: %s.", url)
-        response = requests.get(url)
+        if self.session_id is None:
+            self.logger.error("Must authenticate before connecting to the REST API.")
+            return False
+
+        connection_url = self.url + 'status'
+        self.logger.debug("Testing REST API connection: %s.", connection_url)
+        response = requests.get(connection_url)
         status = ET.fromstring(response.content)
         okay = status.find('okay')
         if okay is not None and okay.text == 'true':
@@ -43,16 +84,16 @@ class DSpaceRestApi(object):
             else:
                 parameters += '&' + key + '=' + str(value)
 
-        new_url = self.rest_server + command + parameters
-        return new_url
+        final_url = self.url + command + parameters
+        return final_url
 
-    def rest_call(self, type='GET', url=''):
+    def rest_call(self, type='GET', url='', data={}):
         if type == 'POST':
-            response = requests.put(url, headers=self.headers)
+            response = requests.post(url, headers=self.headers, cookies=self.cookies, data=data)
         else:
-            response = requests.get(url, headers=self.headers)
+            response = requests.get(url, headers=self.headers, cookies=self.cookies)
 
-        self.logger.debug(url)
+        self.logger.debug(response.url)
         response_json = response.json()
         self.logger.debug(response_json)
         return response_json

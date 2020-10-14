@@ -1,7 +1,10 @@
-solr_server: 'http://localhost:8080/solr'
-rest_server: 'http://localhost:8080/rest'
-dspace_server: 'http://localhost:8080'
 dspace_name: 'MyDSpace'
+dspace_server: 'http://localhost:8080'
+solr_server: 'http://localhost:8080/solr'
+rest_server: 
+    url: 'http://localhost:8080/rest'
+    username: 'admin@example.org'
+    password: 'password'
 statistics_db:
     host: 'localhost'
     port: '5432'
