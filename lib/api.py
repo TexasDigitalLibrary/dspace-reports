@@ -33,7 +33,7 @@ class DSpaceRestApi(object):
         self.test_connection()
 
     def authenticate(self):
-        self.logger.debug("Authenticating connection to REST API")
+        self.logger.info("Authenticating connection to REST API")
        
        # Create data dictionary
         data = {'email':self.username, 'password':self.password}
@@ -43,18 +43,18 @@ class DSpaceRestApi(object):
         login_response = requests.post(login_url, headers=self.headers, data=data)
 
         if login_response.status_code == 200:
-            self.logger.debug(login_response.cookies)
+            self.logger.info(login_response.cookies)
             if 'JSESSIONID' in login_response.cookies:
-                self.logger.debug("Received session ID: %s" %(login_response.cookies['JSESSIONID']))
+                self.logger.info("Received session ID: %s" %(login_response.cookies['JSESSIONID']))
                 self.session_id = login_response.cookies['JSESSIONID']
                 self.cookies = {'JSESSIONID':self.session_id}
                 return True
             else:
-                self.logger.debug("No session ID in response.")
+                self.logger.info("No session ID in response.")
                 return False
         else:
-            self.logger.debug("REST API authentication failed.")
-            self.logger.debug(login_response.text)
+            self.logger.info("REST API authentication failed.")
+            self.logger.info(login_response.text)
             return False
 
     def test_connection(self):
@@ -63,15 +63,15 @@ class DSpaceRestApi(object):
             return False
 
         connection_url = self.url + 'status'
-        self.logger.debug("Testing REST API connection: %s.", connection_url)
+        self.logger.info("Testing REST API connection: %s.", connection_url)
         response = requests.get(connection_url)
         status = ET.fromstring(response.content)
         okay = status.find('okay')
         if okay is not None and okay.text == 'true':
-            self.logger.debug("REST API connection successful")
+            self.logger.info("REST API connection successful.")
             return True
         else:
-            self.logger.warning("REST API connection NOT successful")
+            self.logger.error("REST API connection NOT successful.")
             return False
 
     def construct_url(self, command, params={}):
@@ -93,9 +93,8 @@ class DSpaceRestApi(object):
         else:
             response = requests.get(url, headers=self.headers, cookies=self.cookies)
 
-        self.logger.debug(response.url)
+        # self.logger.debug(response.url)
         response_json = response.json()
-        self.logger.debug(response_json)
         return response_json
         
     def get_hierarchy(self):
