@@ -29,7 +29,7 @@ class DSpaceRestApi(object):
         # Authenticate using parameters in configuration
         authenticated = self.authenticate()
         if authenticated is False:
-            return False
+            return None
 
         # Test connection to REST API
         self.test_connection()

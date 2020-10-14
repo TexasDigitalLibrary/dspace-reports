@@ -29,7 +29,7 @@ class DSpaceSolr(object):
             return True
         else:
             self.logger.warning("Solr server connection NOT successful")
-            return False
+            return None
 
     def construct_url(self, command, params={}):
         parameters = ''
