@@ -1,7 +1,9 @@
 import logging
 import sys
 from datetime import date, datetime, timezone, timedelta
+import uuid
 from dateutil.relativedelta import relativedelta
+from uuid import UUID
 
 from lib.database import Database
 from lib.api import DSpaceRestApi
@@ -60,3 +62,14 @@ class Indexer(object):
             date_range = f"time:[{first_day_of_year} TO {today}]"
 
         return date_range
+
+    def validate_uuid4(self, uuid_string=None):
+        if uuid_string is None or not isinstance(uuid_string, str):
+            return False
+            
+        try:
+            value = UUID(uuid_string, version=4)
+        except ValueError:
+            return False
+        
+        return value.hex == uuid_string
