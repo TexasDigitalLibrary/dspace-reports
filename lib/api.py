@@ -136,6 +136,7 @@ class DSpaceRestApi(object):
         all_items = []
 
         while True:
+            self.logger.debug("Retrieving items %s through %s from the REST API" %(str(offset), str(offset + self.limit)))
             params = {'offset': offset, 'limit': self.limit}
             items_url = self.construct_url(command = 'items', params = params)
             items = self.rest_call(url = items_url)
