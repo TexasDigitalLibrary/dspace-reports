@@ -1,24 +1,9 @@
-import logging
-import re
-import psycopg2.extras
-import requests
-import sys
-from datetime import date, datetime, timedelta
-from dateutil.relativedelta import relativedelta
-
 from lib.database import Database
-from lib.api import DSpaceRestApi
-from lib.solr import DSpaceSolr
 from dspace_reports.indexer import Indexer
 
-from _datetime import timezone
 
 class CommunityIndexer(Indexer):
     def index(self):
-        # Vars
-        communities = {}
-        items = {}
-
         # Get site hierarchy
         hierarchy = self.rest.get_hierarchy()
 
@@ -173,6 +158,7 @@ class CommunityIndexer(Indexer):
 
                     # Loop through list of item views
                     for item_id, item_views in views["id"].items():
+                        self.logger.info("Updating community views stats with %s views from item: %s" %(str(item_views), item_id))
                         if time_period == 'month':
                             self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_month = views_last_month + %i WHERE community_id = '%s'" %(item_views, community_id)))
                             cursor.execute("UPDATE community_stats SET views_last_month = views_last_month + %i WHERE community_id = '%s'" %(item_views, community_id))
@@ -182,7 +168,7 @@ class CommunityIndexer(Indexer):
                         else:
                             self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_total = views_total + %i WHERE community_id = '%s'" %(item_views, community_id)))
                             cursor.execute("UPDATE community_stats SET views_total = views_total + %i WHERE community_id = '%s'" %(item_views, community_id))
-                        
+
                     # Commit changes
                     db.commit()
 
@@ -300,7 +286,7 @@ class CommunityIndexer(Indexer):
 
                     # Loop through list of item downloads
                     for item_id, item_downloads in downloads["owningItem"].items():
-                        self.logger.debug("%s -> %s" %(item_id, str(item_downloads)))
+                        self.logger.info("Updating community downloads stats with %s downloads from item: %s" %(str(item_downloads), item_id))
                         if time_period == 'month':
                             self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(item_downloads, community_id)))
                             cursor.execute("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(item_downloads, community_id))
@@ -310,7 +296,7 @@ class CommunityIndexer(Indexer):
                         else:
                             self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(item_downloads, community_id)))
                             cursor.execute("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(item_downloads, community_id))
-                
+
                     # Commit changes
                     db.commit()
 
@@ -410,7 +396,7 @@ class CommunityIndexer(Indexer):
 
                     # Loop through list of item downloads
                     for item_id, item_downloads in downloads["owningItem"].items():
-                        self.logger.debug("%s -> %s" %(item_id, str(item_downloads)))
+                        self.logger.info("Updating community downloads stats with %s downloads from item: %s" %(str(item_downloads), item_id))
                         if time_period == 'month':
                             self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(item_downloads, community_id)))
                             cursor.execute("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(item_downloads, community_id))
@@ -420,7 +406,7 @@ class CommunityIndexer(Indexer):
                         else:
                             self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(item_downloads, community_id)))
                             cursor.execute("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(item_downloads, community_id))
-                
+
                     # Commit changes
                     db.commit()
 
