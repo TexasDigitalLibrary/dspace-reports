@@ -151,6 +151,7 @@ class CommunityIndexer(Indexer):
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
+                    self.logger.debug("Calling page %s of Solr item views in community: %s" %(str(results_current_page +1), response.url))
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
@@ -278,7 +279,7 @@ class CommunityIndexer(Indexer):
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
-                    self.logger.info("Calling current page of item downloads in collection: %s", response.url)
+                    self.logger.debug("Calling page %s of Solr item downloads in community: %s" %(str(results_current_page +1), response.url))
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
@@ -388,7 +389,7 @@ class CommunityIndexer(Indexer):
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
-                    self.logger.info("Calling current page of item downloads in community: %s", response.url)
+                    self.logger.debug("Calling page %s of Solr item downloads in community: %s" %(str(results_current_page +1), response.url))
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]

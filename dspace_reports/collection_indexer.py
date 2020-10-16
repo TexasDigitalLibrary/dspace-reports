@@ -151,7 +151,8 @@ class CollectionIndexer(Indexer):
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
-
+                    self.logger.debug("Calling page %s of Solr item views in collection: %s" %(str(results_current_page +1), response.url))
+        
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
                     self.logger.info('Items in this batch : %s', str(len(views["id"].items())))
@@ -258,7 +259,8 @@ class CollectionIndexer(Indexer):
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
-
+                    self.logger.debug("Calling page %s of Solr item downloads in collection: %s" %(str(results_current_page +1), response.url))
+        
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
                     

@@ -116,7 +116,7 @@ class ItemIndexer(Indexer):
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
-                    self.logger.info("Solr total item downloads query: %s", response.url)
+                    self.logger.debug("Calling page %s of Solr item views: %s" %(str(results_current_page +1), response.url))
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
@@ -223,7 +223,7 @@ class ItemIndexer(Indexer):
 
                     # Make call to Solr for downloads statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
-                    self.logger.info("Calling current page of item downloads: %s", response.url)
+                    self.logger.debug("Calling page %s of Solr item downloads: %s" %(str(results_current_page +1), response.url))
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
