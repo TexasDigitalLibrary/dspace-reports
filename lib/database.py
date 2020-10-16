@@ -2,6 +2,7 @@ import psycopg2
 import psycopg2.extras
 import logging
 
+
 class Database(object):
     def __init__(self, config):
         self._connection_uri = f"dbname={config['name']} user={config['username']} password={config['password']} host={config['host']} port={config['port']}"
