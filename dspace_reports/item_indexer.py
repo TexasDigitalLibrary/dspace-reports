@@ -243,7 +243,7 @@ class ItemIndexer(Indexer):
                                 self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_total = %s WHERE item_id = %s", (str(item_downloads), item_id)))
                                 cursor.execute("UPDATE item_stats SET downloads_total = %s WHERE item_id = %s", (str(item_downloads), item_id))
                         elif isinstance(item_id, str) and '-unmigrated' in item_id:
-                            self.logger.debug("Item ID was not migrated to UUID: %s (downloads: %s)" %(item_id), str(item_downloads))
+                            self.logger.debug("Item ID was not migrated to UUID: %s (downloads: %s)" %(item_id, str(item_downloads)))
                         else:
                             self.logger.debug("Item ID is not valid: %s (downloads: %s)" %(item_id), str(item_downloads))
 
