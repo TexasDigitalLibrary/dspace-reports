@@ -1,4 +1,5 @@
 import logging
+import re
 import sys
 from datetime import date, datetime, timezone, timedelta
 import uuid
@@ -65,11 +66,10 @@ class Indexer(object):
 
     def validate_uuid4(self, uuid_string=None):
         if uuid_string is None or not isinstance(uuid_string, str):
+            self.logger.debug("Item ID is either none or not a string: %s." %(uuid_string))
             return False
             
-        try:
-            value = UUID(uuid_string, version=4)
-        except ValueError:
-            return False
+        uuid4hex = re.compile('^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}\Z', re.I)
+        match = uuid4hex.match(uuid_string)
         
-        return value.hex == uuid_string
+        return bool(match)
