@@ -85,18 +85,20 @@ class CommunityIndexer(Indexer):
         }
 
         # Get date range for Solr query if time period is specified
-        date_start = None
-        date_end = None
-        date_range = str()
-        date_range = self.get_date_range2(time_period)
-        if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
-            if date_range[0] is not None and date_range[1] is not None:
-                date_start = date_range[0]
-                date_end = date_range[1]
-                solr_query_params["fq"] = f"dc.date.accessioned_dt:[{date_start} TO {date_end}]"
-        else:
-            self.logger.error("Error creating date range.")
+        if time_period != 'all':
+            self.logger.debug("Creating date range for time period: %s" %(time_period))
+            date_start = None
+            date_end = None
+            date_range = str()
+            date_range = self.get_date_range2(time_period)
+            if len(date_range) == 2:
+                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                if date_range[0] is not None and date_range[1] is not None:
+                    date_start = date_range[0]
+                    date_end = date_range[1]
+                    solr_query_params["fq"] = f"dc.date.accessioned_dt:[{date_start} TO {date_end}]"
+            else:
+                self.logger.error("Error creating date range.")
 
         # Add community UUID to query parameter
         solr_query_params['q'] = solr_query_params['q'] + " AND location.comm:" + community_id

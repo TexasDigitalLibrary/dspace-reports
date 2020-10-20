@@ -69,6 +69,7 @@ class Indexer(object):
         if time_period is None:
             return date_range
 
+        self.logger
         if time_period == 'month':
             self.logger.info("Getting stats for last month.")
             dt = date.today()
@@ -89,6 +90,7 @@ class Indexer(object):
 
             date_range = [first_day_of_year, today]
 
+        self.logger.debug("Date range has %s dates." %(str(len(date_range))))
         return date_range
 
     def validate_uuid4(self, uuid_string=None):
