@@ -64,6 +64,33 @@ class Indexer(object):
 
         return date_range
 
+    def get_date_range2(self, time_period=None):
+        date_range = []
+        if time_period is None:
+            return date_range
+
+        if time_period == 'month':
+            self.logger.info("Getting stats for last month.")
+            dt = date.today()
+            today = datetime.combine(dt, datetime.max.time()).isoformat() + 'Z'
+            self.logger.debug("Current date: %s ", today)
+            one_month_ago = datetime.combine((date.today() + relativedelta(months=-1)), datetime.min.time()).isoformat() + 'Z'
+            self.logger.debug("One month ago: %s ", one_month_ago)
+
+            date_range = [one_month_ago, today]
+        elif time_period == 'year':
+            self.logger.info("Getting stats for current year.")
+            dt = date.today()
+            today = datetime.combine(dt, datetime.max.time()).isoformat() + 'Z'
+            self.logger.debug("Current date: %s ", today)
+            
+            first_day_of_year = datetime.combine((date(date.today().year, 1, 1)), datetime.min.time()).isoformat() + 'Z'
+            self.logger.debug("First day of year: %s ", first_day_of_year)
+
+            date_range = [first_day_of_year, today]
+
+        return date_range
+
     def validate_uuid4(self, uuid_string=None):
         if uuid_string is None or not isinstance(uuid_string, str):
             self.logger.debug("Item ID is either none or not a string: %s." %(uuid_string))

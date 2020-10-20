@@ -49,6 +49,9 @@ class CollectionIndexer(Indexer):
                         db.commit()
 
                 for time_period in self.time_periods:
+                    self.logger.info("Indexing items for collection: %s (%s)" %(collection_id, collection_name))
+                    self.index_collection_items(collection_id=collection_id, time_period=time_period)
+
                     self.logger.info("Updating views statistics for collection %s during time period: %s" %(collection_id, time_period))
                     self.index_collection_views(collection_id=collection_id, time_period=time_period)
 
@@ -64,6 +67,67 @@ class CollectionIndexer(Indexer):
         else:
             self.logger.info("There are no subcommunities in this community.")
         
+    def index_collection_items(self, collection_id=None, time_period=None):
+        if collection_id is None or time_period is None:
+            return
+
+        # Create base Solr URL
+        solr_url = self.solr_server + "/search/select"
+        self.logger.debug("tdl solr_url: %s" %(solr_url))
+        
+        # Get Solr shards
+        shards = self.solr.get_statistics_shards(time_period)
+        
+        # Default Solr params
+        solr_query_params = {
+            "q": "search.resourcetype:2",
+            "wt": "json"
+        }
+
+        # Get date range for Solr query if time period is specified
+        date_start = None
+        date_end = None
+        date_range = str()
+        date_range = self.get_date_range2(time_period)
+        if len(date_range) == 2:
+            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            if date_range[0] is not None and date_range[1] is not None:
+                date_start = date_range[0]
+                date_end = date_range[1]
+                solr_query_params["fq"] = f"dc.date.accessioned_dt:[{date_start} TO {date_end}]"
+        else:
+            self.logger.error("Error creating date range.")
+
+        # Add community UUID to query parameter
+        solr_query_params['q'] = solr_query_params['q'] + " AND location.coll:" + collection_id
+
+        # Make call to Solr for items statistics
+        response = self.solr.call(url=solr_url, params=solr_query_params)
+        self.logger.info("Calling Solr total items in community: %s", response.url)
+        
+        results_totalItems = 0
+        try:
+            # Get total number of items
+            results_totalItems = response.json()["response"]["numFound"]
+            self.logger.info("Solr - total items: %s", str(results_totalItems))
+        except TypeError:
+            self.logger.info("No item to index, returning.")
+            return
+
+        with Database(self.config['statistics_db']) as db:
+            with db.cursor() as cursor:
+                if time_period == 'month':
+                    self.logger.debug(cursor.mogrify("UPDATE collection_stats SET items_last_month = %i WHERE collection_id = '%s'" %(results_totalItems, collection_id)))
+                    cursor.execute("UPDATE collection_stats SET items_last_month = %i WHERE collection_id = '%s'" %(results_totalItems, collection_id))
+                elif time_period == 'year':
+                    self.logger.debug(cursor.mogrify("UPDATE collection_stats SET items_last_year = %i WHERE collection_id = '%s'" %(results_totalItems, collection_id)))
+                    cursor.execute("UPDATE collection_stats SET items_last_year = %i WHERE collection_id = '%s'" %(results_totalItems, collection_id))
+                else:
+                    self.logger.debug(cursor.mogrify("UPDATE collection_stats SET items_total = %i WHERE collection_id = '%s'" %(results_totalItems, collection_id)))
+                    cursor.execute("UPDATE collection_stats SET items_total = %i WHERE collection_id = '%s'" %(results_totalItems, collection_id))
+
+                # Commit changes
+                db.commit()
 
     def index_collection_views(self, collection_id=None, time_period=None):
         if collection_id is None or time_period is None:
