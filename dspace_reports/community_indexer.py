@@ -32,7 +32,7 @@ class CommunityIndexer(Indexer):
         else:
             self.logger.info("Repository has no communities.")
                 
-    def load_communities_recursive(self, communities, community):
+    def load_communities_recursive(self, communities, community, parent_community_name=""):
         # Extract metadata
         community_id = community['id']
         community_name = community['name']
@@ -43,8 +43,8 @@ class CommunityIndexer(Indexer):
          # Insert the community into the database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                self.logger.debug(cursor.mogrify("INSERT INTO community_stats (community_id, community_name, community_url) VALUES (%s, %s, %s)", (community_id, community_name, community_url)))
-                cursor.execute("INSERT INTO community_stats (community_id, community_name, community_url) VALUES (%s, %s, %s)", (community_id, community_name, community_url))
+                self.logger.debug(cursor.mogrify("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_id, community_name, community_url, parent_community_name)))
+                cursor.execute("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_id, community_name, community_url, parent_community_name))
                 db.commit()
 
         # Index views and downloads for the current community
@@ -63,7 +63,7 @@ class CommunityIndexer(Indexer):
             sub_communities = community['community']
             for sub_community in sub_communities:
                 self.logger.info("Loading subcommunity: %s (%s)" %(sub_community['name'], sub_community['id']))
-                self.load_communities_recursive(communities, sub_community)
+                self.load_communities_recursive(communities=communities, community=sub_community, parent_community_name=community_name)
         else:
             self.logger.info("There are no subcommunities in this community.")
         

@@ -30,6 +30,7 @@ class DatabaseManager():
                         community_id UUID PRIMARY KEY NOT NULL,
                         community_name VARCHAR(255) NOT NULL,
                         community_url VARCHAR(255) NOT NULL,
+                        parent_community_name VARCHAR(255),
                         items_last_month INTEGER DEFAULT 0,
                         items_last_year INTEGER DEFAULT 0,
                         items_total INTEGER DEFAULT 0,
@@ -43,6 +44,7 @@ class DatabaseManager():
                     """,
                     """
                     CREATE TABLE collection_stats (
+                        parent_community_name VARCHAR(255) NOT NULL,
                         collection_id UUID PRIMARY KEY NOT NULL,
                         collection_name VARCHAR(255) NOT NULL,
                         collection_url VARCHAR(255) NOT NULL,
@@ -59,6 +61,7 @@ class DatabaseManager():
                     """,
                     """
                     CREATE TABLE item_stats (
+                        collection_name VARCHAR(255) NOT NULL,
                         item_id UUID PRIMARY KEY NOT NULL,
                         item_name VARCHAR(255) NOT NULL,
                         item_url VARCHAR(255) NOT NULL,

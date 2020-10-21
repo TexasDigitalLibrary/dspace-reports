@@ -130,16 +130,25 @@ class DSpaceRestApi(object):
         items = self.rest_call(url = items_url)
         return items
         
-    def get_items(self):
+    def get_items(self, expand=[]):
         offset = 0
         params = {}
+        expandValue = ""
         all_items = []
+
+        if len(expand) > 0:
+            expandValue = ','.join(expand)
+            params['expand'] = expandValue
+            self.logger.debug("Added expand list to parameters: %s " %(expandValue))
 
         while True:
             self.logger.debug("Retrieving items %s through %s from the REST API" %(str(offset), str(offset + self.limit)))
-            params = {'offset': offset, 'limit': self.limit}
+            params['offset'] = offset
+            params['limit'] = self.limit
+
             items_url = self.construct_url(command = 'items', params = params)
             items = self.rest_call(url = items_url)
+
             if len(items) == 0:
                 break
 

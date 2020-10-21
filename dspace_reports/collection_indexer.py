@@ -30,7 +30,9 @@ class CollectionIndexer(Indexer):
             self.logger.info("Repository has no communities.")
                 
     def load_collections_recursive(self, collections, community):
-        self.logger.info("Loading collections of community %s (%s)" %(community['name'], community['id']))
+        community_id = community['id']
+        community_name = community['name']
+        self.logger.info("Loading collections of community %s (%s)" %(community_name, community_id))
 
         if 'collection' in community:
             collections = community['collection']
@@ -45,7 +47,7 @@ class CollectionIndexer(Indexer):
                 # Insert the collection into the database
                 with Database(self.config['statistics_db']) as db:
                     with db.cursor() as cursor:
-                        cursor.execute("INSERT INTO collection_stats (collection_id, collection_name, collection_url) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING", (collection_id, collection_name, collection_url))
+                        cursor.execute("INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (community_name, collection_id, collection_name, collection_url))
                         db.commit()
 
                 for time_period in self.time_periods:

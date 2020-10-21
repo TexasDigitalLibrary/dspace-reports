@@ -1,3 +1,5 @@
+import sys
+
 from lib.database import Database
 from dspace_reports.indexer import Indexer
 
@@ -5,7 +7,7 @@ from dspace_reports.indexer import Indexer
 class ItemIndexer(Indexer):
     def index(self):
         # Iterate over DSpace items to fill item_stats table
-        items = self.rest.get_items()
+        items = self.rest.get_items(expand=['parentCollection'])
         self.logger.debug("Found %s items.", str(len(items)))
 
         with Database(self.config['statistics_db']) as db:
@@ -15,7 +17,15 @@ class ItemIndexer(Indexer):
                     self.logger.info("Loading item: %s", item['uuid'])
                     item_id = item['uuid']
                     item_name = item['name']
+
+                    # Attempt to get collection name
+                    item_collection_name = "Unknown"
+                    if 'parentCollection' in item:
+                        item_collection = item['parentCollection']
+                        item_collection_name = item_collection['name']
                     
+                    self.logger.info("item collection: %s " %(item_collection_name))
+
                     # If name is null then use "Untitled"
                     if item_name is not None:
                         # If item name is longer than 255 characters then shorten it
@@ -27,8 +37,8 @@ class ItemIndexer(Indexer):
                     # Create handle URL for item
                     item_url = self.base_url + item['handle']
 
-                    self.logger.debug(cursor.mogrify("INSERT INTO item_stats (item_id, item_name, item_url) VALUES (%s, %s, %s)", (item_id, item_name, item_url)))
-                    cursor.execute("INSERT INTO item_stats (item_id, item_name, item_url) VALUES (%s, %s, %s)", (item_id, item_name, item_url))
+                    self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url)))
+                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url))
                     
                     db.commit()
 
