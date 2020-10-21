@@ -38,7 +38,7 @@ class RunItemIndexer():
         # Create items stats indexer
         item_indexer = ItemIndexer(config=self.config)
         
-        # Index collections stats from Solr
+        # Index items stats from Solr
         item_indexer.index()
 
 
