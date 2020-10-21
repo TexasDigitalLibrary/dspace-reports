@@ -1,7 +1,4 @@
-import logging
-import os
 import sys
-import yaml
 
 from optparse import OptionParser
 
@@ -25,6 +22,21 @@ class DatabaseManager():
             with db.cursor() as cursor:
                 # Create new statistics tables
                 commands = (
+                    """
+                    CREATE TABLE repository_stats (
+                        repository_id UUID PRIMARY KEY NOT NULL,
+                        repository_name VARCHAR(255) NOT NULL,
+                        items_last_month INTEGER DEFAULT 0,
+                        items_last_year INTEGER DEFAULT 0,
+                        items_total INTEGER DEFAULT 0,
+                        views_last_month INTEGER DEFAULT 0,
+                        views_last_year INTEGER DEFAULT 0,
+                        views_total INTEGER DEFAULT 0,
+                        downloads_last_month INTEGER DEFAULT 0,
+                        downloads_last_year INTEGER DEFAULT 0,
+                        downloads_total INTEGER DEFAULT 0
+                    )
+                    """,
                     """
                     CREATE TABLE community_stats (
                         community_id UUID PRIMARY KEY NOT NULL,
@@ -96,6 +108,9 @@ class DatabaseManager():
                 # Create new statistics tables
                 commands = (
                     """
+                    DROP TABLE repository_stats
+                    """,
+                    """
                     DROP TABLE community_stats
                     """,
                     """
@@ -119,6 +134,12 @@ class DatabaseManager():
         # Check if statistics tables exist
         with Database(config=config['statistics_db']) as db:
             with db.cursor() as cursor:
+                cursor.execute("SELECT * FROM information_schema.tables WHERE table_name=%s", ('repository_stats',))
+                if bool(cursor.rowcount):
+                    logger.debug('The repository_stats table exists.')
+                    tables_exist = True
+                else:
+                    logger.debug('The repository_stats table DOES NOT exist.')
                 cursor.execute("SELECT * FROM information_schema.tables WHERE table_name=%s", ('community_stats',))
                 if bool(cursor.rowcount):
                     logger.debug('The community_stats table exists.')

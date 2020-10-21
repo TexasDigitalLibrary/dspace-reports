@@ -44,6 +44,10 @@ class RunReports():
         # Stats reports to create
         reports = [
             {
+                'name': 'repository',
+                'table': 'repository_stats'
+            },
+            {
                 'name': 'communities',
                 'table': 'community_stats'
             },
@@ -90,7 +94,7 @@ class RunReports():
                         
                 desc = cursor.description
                 column_names = [col[0] for col in desc]
-                data = [dict(zip(column_names, row))  
+                data = [dict(zip(column_names, row))
                         for row in cursor.fetchall()]
            
         report_csv_file = self.output.save_report_csv_file(output_file_path=self.output_dir + report['name'] + '.csv', headers=column_names, data=data)            

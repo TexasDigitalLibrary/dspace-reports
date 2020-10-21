@@ -24,6 +24,10 @@ class Output(object):
             self.logger.error("Output directory doesn't exist and can't be created.")
             return False
 
+        # TODO: make this configurable
+        if "repository_id" in headers:
+            headers.remove("repository_id")
+
         with open(output_file_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=headers, extrasaction='ignore', dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
