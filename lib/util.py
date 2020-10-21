@@ -2,6 +2,7 @@ import logging
 import os
 import yaml
 
+
 class Utilities(object):
     def load_config(self, config_file=None):
         if config_file is None:

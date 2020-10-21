@@ -1,8 +1,6 @@
 import requests
 import logging
-import sys
 
-from requests.auth import HTTPBasicAuth
 import xml.etree.ElementTree as ET
 
 

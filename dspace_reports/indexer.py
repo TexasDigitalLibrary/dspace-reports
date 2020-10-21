@@ -1,14 +1,13 @@
 import logging
 import re
 import sys
-from datetime import date, datetime, timezone, timedelta
-import uuid
-from dateutil.relativedelta import relativedelta
-from uuid import UUID
 
-from lib.database import Database
+from datetime import date, datetime
+from dateutil.relativedelta import relativedelta
+
 from lib.api import DSpaceRestApi
 from lib.solr import DSpaceSolr
+
 
 class Indexer(object):
     def __init__(self, config):

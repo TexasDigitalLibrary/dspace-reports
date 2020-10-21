@@ -1,10 +1,6 @@
 import requests
 import logging
 import re
-import sys
-
-from requests.auth import HTTPBasicAuth
-import xml.etree.ElementTree as ET
 
 
 class DSpaceSolr(object):

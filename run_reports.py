@@ -1,11 +1,5 @@
-import itertools
 import logging
-import os
-import psycopg2.extras
-import re
-import requests
 import sys
-import yaml
 
 from optparse import OptionParser
 from datetime import datetime

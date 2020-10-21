@@ -1,5 +1,3 @@
-import sys
-
 from lib.database import Database
 from dspace_reports.indexer import Indexer
 
