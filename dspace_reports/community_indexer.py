@@ -83,12 +83,10 @@ class CommunityIndexer(Indexer):
         }
 
         # Get date range for Solr query if time period is specified
+        date_range = []
         if time_period != 'all':
             self.logger.debug("Creating date range for time period: %s" %(time_period))
-            date_start = None
-            date_end = None
-            date_range = str()
-            date_range = self.get_date_range2(time_period)
+            date_range = self.get_date_range(time_period)
             if len(date_range) == 2:
                 self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
                 if date_range[0] is not None and date_range[1] is not None:
@@ -160,11 +158,17 @@ class CommunityIndexer(Indexer):
         solr_query_params['q'] = solr_query_params['q'] + " AND owningComm:" + community_id
 
         # Get date range for Solr query if time period is specified
-        date_range = str()
-        date_range = self.get_date_range(time_period)
-        if len(date_range) > 0:
-            self.logger.debug("Searching date range: %s", date_range)
-            solr_query_params['q'] = solr_query_params['q'] + " AND " + date_range
+        date_range = []
+        if time_period != 'all':
+            date_range = self.get_date_range(time_period)
+            if len(date_range) == 2:
+                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                if date_range[0] is not None and date_range[1] is not None:
+                    date_start = date_range[0]
+                    date_end = date_range[1]
+                    solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+            else:
+                self.logger.error("Error creating date range.")
         
         # Make call to Solr for views statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
@@ -209,11 +213,12 @@ class CommunityIndexer(Indexer):
                     solr_query_params['q'] = solr_query_params['q'] + " AND owningComm:" + community_id
 
                     # Get date range for Solr query if time period is specified
-                    date_range = str()
-                    date_range = self.get_date_range(time_period)
-                    if len(date_range) > 0:
-                        self.logger.debug("Searching date range: %s", date_range)
-                        solr_query_params['q'] = solr_query_params['q'] + " AND " + date_range
+                    if len(date_range) == 2:
+                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        if date_range[0] is not None and date_range[1] is not None:
+                            date_start = date_range[0]
+                            date_end = date_range[1]
+                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
@@ -272,11 +277,17 @@ class CommunityIndexer(Indexer):
         solr_query_params['q'] = solr_query_params['q'] + " AND owningComm:" + community_id
 
         # Get date range for Solr query if time period is specified
-        date_range = str()
-        date_range = self.get_date_range(time_period)
-        if len(date_range) > 0:
-            self.logger.debug("Searching date range: %s", date_range)
-            solr_query_params['q'] = solr_query_params['q'] + " AND " + date_range
+        date_range = []
+        if time_period != 'all':
+            date_range = self.get_date_range(time_period)
+            if len(date_range) == 2:
+                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                if date_range[0] is not None and date_range[1] is not None:
+                    date_start = date_range[0]
+                    date_end = date_range[1]
+                    solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+            else:
+                self.logger.error("Error creating date range.")
         
         # Make call to Solr for downloads statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
@@ -321,9 +332,12 @@ class CommunityIndexer(Indexer):
                     solr_query_params['q'] = solr_query_params['q'] + " AND owningComm:" + community_id
 
                     # Get date range for Solr query if time period is specified
-                    if len(date_range) > 0:
-                        # self.logger.debug("Searching date range: %s", date_range)
-                        solr_query_params['q'] = solr_query_params['q'] + " AND " + date_range
+                    if len(date_range) == 2:
+                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        if date_range[0] is not None and date_range[1] is not None:
+                            date_start = date_range[0]
+                            date_end = date_range[1]
+                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
 
                     # Make call to Solr for views statistics
                     response = self.solr.call(url=solr_url, params=solr_query_params)
