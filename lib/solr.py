@@ -54,7 +54,7 @@ class DSpaceSolr(object):
     def get_statistics_shards(self, time_period):
         # Vars
         shards = str()
-        shards = f"{self.solr_server}/statistics"
+        shards = f"{self.solr_server}statistics"
         statistics_core_years = []
 
         self.logger.info("time_period in shards: %s", time_period)
