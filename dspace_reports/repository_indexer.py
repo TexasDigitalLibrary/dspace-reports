@@ -266,7 +266,7 @@ class RepositoryIndexer(Indexer):
             self.logger.info("No item downloads to index, returning.")
             return
 
-        # Item views count
+        # Item downloads count
         total_repository_downloads = 0
 
         # Calculate pagination
