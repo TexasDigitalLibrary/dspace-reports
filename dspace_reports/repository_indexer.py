@@ -308,7 +308,7 @@ class RepositoryIndexer(Indexer):
             
             # Loop through list of item downloads
             for item_id, item_downloads in downloads["owningItem"].items():
-                self.logger.info("Updating collection downloads stats with %s views from item: %s" %(str(item_downloads), item_id))
+                self.logger.info("Updating repository downloads stats with %s views from item: %s" %(str(item_downloads), item_id))
                 total_repository_downloads = total_repository_downloads + item_downloads
 
             results_current_page += 1
