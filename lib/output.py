@@ -1,5 +1,6 @@
 import os
 import csv
+import shutil
 import xlsxwriter
 import logging
 
@@ -11,6 +12,11 @@ class Output(object):
         self.config = config
         self.logger = logging.getLogger('dataverse-reports')
         self.utilities = Utilities()
+
+        # Ensure work_dir has trailing slash
+        self.work_dir = config['work_dir']
+        if self.work_dir[len(self.work_dir)-1] != '/':
+            self.work_dir = self.work_dir + '/'
 
     def save_report_csv_file(self, output_file_path=None, headers=[], data=[]):
         # Sanity checks
@@ -36,6 +42,36 @@ class Output(object):
 
         self.logger.info("Saved report to CSV file %s.", output_file_path)
         return output_file_path
+
+    def update_header_report_csv_file(self, input_file_path=None, headers_old=None, headers_new=None):
+        # Sanity checks
+        if input_file_path is None:
+            self.logger.error("Input file path is required.")
+            return False
+        if not headers_old:
+            self.logger.error("Old report headers are required.")
+            return False
+        if not headers_new:
+            self.logger.error("New report headers are required.")
+            return False
+        if not self.utilities.check_file_exists(input_file_path):
+            self.logger.error("Input file doesn't exist.")
+            return False
+
+        temp_csv_file_path = self.work_dir + 'temp.csv'
+
+        with open(input_file_path, 'r') as fp:
+            reader = csv.DictReader(fp, fieldnames=headers_new)
+
+            with open(temp_csv_file_path, 'w', newline='') as fh:
+                writer = csv.DictWriter(fh, fieldnames=reader.fieldnames)
+                writer.writeheader()
+                header_mapping = next(reader)
+                writer.writerows(reader)
+
+        # Copy tempfile to report csv file
+        destination_file_path = shutil.copyfile(temp_csv_file_path, input_file_path)
+        return destination_file_path
 
     def save_report_excel_file(self, output_file_path=None, worksheet_files=[]):
         # Sanity checks

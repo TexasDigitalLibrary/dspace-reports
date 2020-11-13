@@ -74,3 +74,13 @@ class Utilities(object):
         else:
             os.mkdir(directory)
             return True
+
+    def check_file_exists(self, file_path=None):
+        if file_path is None:
+            print("Must specify a file path.")
+            return False
+
+        if os.path.isfile(file_path):
+            return True
+        else:
+            return False

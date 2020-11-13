@@ -7,6 +7,65 @@ from lib.util import Utilities
 
 
 class DatabaseManager():
+    repository_column_map = {
+        'repository_id': 'Repository ID',
+        'repository_name': 'Repository',
+        'items_last_month': 'Items added last month',
+        'items_last_year': 'Items added last year',
+        'items_total': 'Total Items',
+        'views_last_month': 'Item views last month',
+        'views_last_year': 'Item views last year',
+        'views_total': 'Total item views',
+        'downloads_last_month': 'Item downloads last month',
+        'downloads_last_year': 'Item downloads last year',
+        'downloads_total': 'Total item downloads'
+    }
+
+    communities_column_map = {
+        'community_id': 'Community ID',
+        'community_name': 'Community Name',
+        'community_url': 'Community URL',
+        'parent_community_name': 'Parent Community Name',
+        'items_last_month': 'Items added last month',
+        'items_last_year': 'Items added last year',
+        'items_total': 'Total Items',
+        'views_last_month': 'Item views last month',
+        'views_last_year': 'Item views last year',
+        'views_total': 'Total item views',
+        'downloads_last_month': 'Item downloads last month',
+        'downloads_last_year': 'Item downloads last year',
+        'downloads_total': 'Total item downloads'
+    }
+
+    collections_column_map = {
+        'parent_community_name': 'Parent Community Name',
+        'collection_id': 'Collection ID',
+        'collection_name': 'Collection Name',
+        'collection_url': 'Collection URL',
+        'items_last_month': 'Items added last month',
+        'items_last_year': 'Items added last year',
+        'items_total': 'Total Items',
+        'views_last_month': 'Item views last month',
+        'views_last_year': 'Item views last year',
+        'views_total': 'Total item views',
+        'downloads_last_month': 'Item downloads last month',
+        'downloads_last_year': 'Item downloads last year',
+        'downloads_total': 'Total item downloads'
+    }
+
+    items_column_map = {  
+        'item_id': 'Item ID',
+        'collection_name': 'Collection Name',
+        'item_name': 'Item Title',
+        'item_url': 'Item URL',
+        'views_last_month': 'Item views last month',
+        'views_last_year': 'Item views last year',
+        'views_total': 'Total item views',
+        'downloads_last_month': 'Item downloads last month',
+        'downloads_last_year': 'Item downloads last year',
+        'downloads_total': 'Total item downloads'
+    }
+
     def __init__(self, config=None):
         if config is None:
             print('A configuration file required to create the community stats indexer.')

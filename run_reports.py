@@ -1,3 +1,4 @@
+from database_manager import DatabaseManager
 import logging
 import sys
 
@@ -60,6 +61,9 @@ class RunReports():
         for report in reports:
             csv_report_file = self.create_csv_report(report=report)
             self.logger.info("Created CSV report file: {csv_report_file}.".format(csv_report_file=csv_report_file))
+
+            # Convert column names to human readable text
+
             csv_report_files.append(csv_report_file)
 
         # Create Excel report file from CSV files
@@ -91,7 +95,14 @@ class RunReports():
                 data = [dict(zip(column_names, row))
                         for row in cursor.fetchall()]
            
+        
+        # Save raw database table in a CSV file
         report_csv_file = self.output.save_report_csv_file(output_file_path=self.output_dir + report['name'] + '.csv', headers=column_names, data=data)            
+        
+        # Convert column names to human readable text based on mappings in DatabaseManager
+        column_names_new = self.map_column_names(report_name=report['name'], column_names=column_names)
+        report_csv_file = self.output.update_header_report_csv_file(input_file_path=report_csv_file, headers_old=column_names, headers_new=column_names_new)            
+
         return report_csv_file
 
     def create_excel_report(self, csv_report_files=None):
@@ -108,6 +119,32 @@ class RunReports():
         else:
             self.logger.error("There was an error saving the Excel file.")
             return False
+
+    def map_column_names(self, report_name=None, column_names=None):
+        if report_name is None or column_names is None:
+            self.logger.error("One or more parameters missing to map table columns.")
+            return False
+
+        column_map = None
+        if report_name == 'repository':
+            column_map = DatabaseManager.repository_column_map
+        elif report_name == 'communities':
+            column_map = DatabaseManager.communities_column_map
+        elif report_name == 'collections':
+            column_map = DatabaseManager.collections_column_map
+        elif report_name == 'items':
+            column_map = DatabaseManager.items_column_map
+        else:
+            self.logger.error('Unrecognized report name.')
+
+        if column_map is not None:
+            for i in range(len(column_names)):
+                self.logger.debug('Looking at column name: ' + column_names[i])
+                if column_names[i] in column_map:
+                    self.logger.debug('Changing column name to ' + column_map[column_names[i]])
+                    column_names[i] = column_map[column_names[i]]
+
+        return column_names
 
 
 def main():
