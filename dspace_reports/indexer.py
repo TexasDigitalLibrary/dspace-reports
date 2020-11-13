@@ -45,7 +45,7 @@ class Indexer(object):
         if time_period == 'month':
             self.logger.info("Getting stats for last month.")
             dt = date.today()
-            today = datetime.combine(dt, datetime.max.time()).isoformat() + 'Z'
+            today = datetime.combine(dt, datetime.min.time()).isoformat() + 'Z'
             self.logger.debug("Current date: %s ", today)
             one_month_ago = datetime.combine((date.today() + relativedelta(months=-1)), datetime.min.time()).isoformat() + 'Z'
             self.logger.debug("One month ago: %s ", one_month_ago)
