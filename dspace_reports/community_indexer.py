@@ -192,6 +192,7 @@ class CommunityIndexer(Indexer):
         results_num_pages = int(results_totalNumFacets / results_per_page)
         results_current_page = 0
 
+        # Iterate over Solr results
         while results_current_page <= results_num_pages:
             self.logger.info("Indexing community item views (page %s of %s)" %(str(results_current_page + 1), str(results_num_pages + 1)))
 
@@ -238,6 +239,7 @@ class CommunityIndexer(Indexer):
 
         self.logger.info("Total community views: %s" %(str(total_community_views)))
         
+        # Update database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
@@ -319,6 +321,7 @@ class CommunityIndexer(Indexer):
         self.logger.debug("%s total pages of results." %(str(results_num_pages+1)))
         results_current_page = 0
 
+        # Iterate over Solr results
         while results_current_page <= results_num_pages:
             self.logger.info("Indexing page %s of %s pages of item downloads." %(str(results_current_page+1), str(results_num_pages+1)))
 
@@ -364,6 +367,7 @@ class CommunityIndexer(Indexer):
 
         self.logger.info("Total community downloads: %s" %(str(total_community_downloads)))
         
+        # Update database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
