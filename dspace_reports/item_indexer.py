@@ -1,45 +1,66 @@
+import sys
+
+from lib.oai import DSpaceOai
 from lib.database import Database
 from dspace_reports.indexer import Indexer
 
 
 class ItemIndexer(Indexer):
-    def index(self):
-        # Iterate over DSpace items to fill item_stats table
-        items = self.rest.get_items(expand=['parentCollection'])
-        self.logger.debug("Found %s items.", str(len(items)))
+    def __init__(self, config):
+        super().__init__(config)
 
+        # Create OAI-PMH server object
+        self.oai = DSpaceOai(oai_server=config['oai_server'])
+        if self.oai is None:
+            self.logger.error("Unable to create Indexer due to earlier failures creating a connection to OAI-PMH feed.")
+            sys.exit(1)
+
+        # Set time periods to only month and year as all can cause Solr to crash
+        self.time_periods = ['month', 'year']
+
+    def index(self):
+        # Get list of identifiers from OAI-PMH feed
+        records = self.oai.get_records()
+        self.logger.debug("Found %s records in OAI-PMH feed." %(str(len(records))))
+
+        # Iterate over OAI-PMH records and call REST API for addiional metadata
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                for index in range(len(items)):
-                    item = items[index]
-                    self.logger.info("Loading item: %s", item['uuid'])
-                    item_id = item['uuid']
-                    item_name = item['name']
+                for record in records:
+                    self.logger.debug("Calling REST API for record: %s" %(record))
 
-                    # Attempt to get collection name
-                    item_collection_name = "Unknown"
-                    if 'parentCollection' in item:
-                        item_collection = item['parentCollection']
-                        item_collection_name = item_collection['name']
-                    
-                    self.logger.info("item collection: %s " %(item_collection_name))
+                    metadata_entry = '{"key":"dc.identifier.uri", "value":"%s"}' %(record)
+                    items = self.rest.find_items_by_metadata_field(metadata_entry=metadata_entry, expand=['parentCollection'])
+                    if len(items) == 1:
+                        item = items[0]
+                        item_id = item['uuid']
+                        item_name = item['name']
 
-                    # If name is null then use "Untitled"
-                    if item_name is not None:
-                        # If item name is longer than 255 characters then shorten it
-                        if len(item_name) > 255:
-                            item_name = item_name[0:251] + "..."
+                        # Attempt to get collection name
+                        item_collection_name = "Unknown"
+                        if 'parentCollection' in item:
+                            item_collection = item['parentCollection']
+                            item_collection_name = item_collection['name']
+                        
+                            self.logger.info("item collection: %s " %(item_collection_name))
+
+                        # If name is null then use "Untitled"
+                        if item_name is not None:
+                            # If item name is longer than 255 characters then shorten it to fit in database field
+                            if len(item_name) > 255:
+                                item_name = item_name[0:251] + "..."
+                        else:
+                            item_name = "Untitled"
+
+                        # Create handle URL for item
+                        item_url = self.base_url + item['handle']
+
+                        self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url)))
+
+                        db.commit()
                     else:
-                        item_name = "Untitled"    
-
-                    # Create handle URL for item
-                    item_url = self.base_url + item['handle']
-
-                    self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url)))
-                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url))
-                    
-                    db.commit()
-
+                        self.logger.error('Unable to find item in REST API.')
+        
         for time_period in self.time_periods:
             self.logger.info("Indexing Solr views for time period: %s ", time_period)
             self.index_views(time_period=time_period)
@@ -95,7 +116,7 @@ class ItemIndexer(Indexer):
             ]
             self.logger.info("Solr total item views count: %s", str(results_totalNumFacets))
         except TypeError:
-            self.logger.info("No item views to index, returning.")
+            self.logger.info("No item views to index")
             return
 
         # divide results into "pages" (cast to int to effectively round down)
@@ -213,7 +234,7 @@ class ItemIndexer(Indexer):
             ]
             self.logger.info("Solr total item downloads count: %s", str(results_totalNumFacets))
         except TypeError:
-            self.logger.info("No item downloads to index, returning.")
+            self.logger.info("No item downloads to index.")
             return
 
         # Calculate pagination
