@@ -67,6 +67,7 @@ class DSpaceRestApi(object):
         connection_url = self.url + 'status'
         self.logger.info("Testing REST API connection: %s.", connection_url)
         response = requests.get(connection_url)
+        
         status = ET.fromstring(response.content)
         okay = status.find('okay')
         if okay is not None and okay.text == 'true':
@@ -89,13 +90,17 @@ class DSpaceRestApi(object):
         final_url = self.url + command + parameters
         return final_url
 
-    def rest_call(self, type='GET', url='', data={}):
-        if type == 'POST':
-            response = requests.post(url, headers=self.headers, cookies=self.cookies, data=data)
-        else:
-            response = requests.get(url, headers=self.headers, cookies=self.cookies)
+    def rest_call(self, type='GET', url='', headers=None, data={}):
+        if headers is None:
+            headers = self.headers
 
-        # self.logger.debug(response.url)
+        if type == 'POST':
+            response = requests.post(url, headers=headers, cookies=self.cookies, data=data)
+        else:
+            response = requests.get(url, headers=headers, cookies=self.cookies)
+
+        self.logger.debug(response.status_code)
+        self.logger.debug(response.text)
         response_json = response.json()
         return response_json
         
@@ -131,7 +136,7 @@ class DSpaceRestApi(object):
     def get_items(self, expand=[]):
         offset = 0
         params = {}
-        expandValue = ""
+        expandValue = ''
         all_items = []
 
         if len(expand) > 0:
@@ -145,6 +150,7 @@ class DSpaceRestApi(object):
             params['limit'] = self.limit
 
             items_url = self.construct_url(command = 'items', params = params)
+            self.logger.debug("Items Solr call: %s" %(items_url))
             items = self.rest_call(url = items_url)
 
             if len(items) == 0:
@@ -155,9 +161,31 @@ class DSpaceRestApi(object):
 
         return all_items
 
+    def find_items_by_metadata_field(self, metadata_entry=None, expand=[]):
+        if metadata_entry is None:
+            return
+
+        params = {}
+        expandValue = ''
+
+        if len(expand) > 0:
+            expandValue = ','.join(expand)
+            params['expand'] = expandValue
+            self.logger.debug("Added expand list to parameters: %s " %(expandValue))
+
+        headers = self.headers
+        headers['Content-Type'] = 'application/json'
+
+        items_metadata_url = self.construct_url(command = f"items/find-by-metadata-field", params = params)
+        self.logger.info(items_metadata_url)
+        self.logger.info(metadata_entry)
+        items = self.rest_call(type = 'POST', url = items_metadata_url, headers = headers, data = metadata_entry)
+        return items
+
     def get_item(self, item_id=None):
         if item_id is None:
             return
+
         item_url = self.construct_url(command = f"items/{item_id}")
         item = self.rest_call(url = item_url)
         return item
