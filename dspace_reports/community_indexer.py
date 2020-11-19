@@ -141,14 +141,6 @@ class CommunityIndexer(Indexer):
         solr_query_params = {
             "q": "type:2",
             "fq": "isBot:false AND statistics_type:view",
-            "facet": "true",
-            "facet.field": "id",
-            "facet.mincount": 1,
-            "facet.limit": 1,
-            "facet.offset": 0,
-            "stats": "true",
-            "stats.field": "id",
-            "stats.calcdistinct": "true",
             "shards": shards,
             "rows": 0,
             "wt": "json"
@@ -169,9 +161,6 @@ class CommunityIndexer(Indexer):
                     solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
             else:
                 self.logger.error("Error creating date range.")
-        
-        # Total community views count
-        total_community_views = 0
 
         # Make call to Solr for views statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
@@ -179,78 +168,26 @@ class CommunityIndexer(Indexer):
         
         try:
             # Get total number of items
-            results_totalNumFacets = response.json()["stats"]["stats_fields"]["id"][
-                "countDistinct"
-            ]
-            self.logger.info("Solr views - total items: %s", str(results_totalNumFacets))
+            results_num_found = response.json()["response"]["numFound"]
+            self.logger.info("Solr views - total items: %s", str(results_num_found))
         except TypeError:
             self.logger.info("No item views to index.")
             return
 
-        # Calculate pagination
-        results_per_page = 100
-        results_num_pages = int(results_totalNumFacets / results_per_page)
-        results_current_page = 0
-
-        # Iterate over Solr results
-        while results_current_page <= results_num_pages:
-            self.logger.info("Indexing community item views (page %s of %s)" %(str(results_current_page + 1), str(results_num_pages + 1)))
-
-            # Construct Solr params for current results
-            solr_query_params = {
-                "q": "type:2",
-                "fq": "isBot:false AND statistics_type:view",
-                "facet": "true",
-                "facet.field": "id",
-                "facet.mincount": 1,
-                "facet.limit": results_per_page,
-                "facet.offset": results_current_page * results_per_page,
-                "shards": shards,
-                "rows": 0,
-                "wt": "json",
-                "json.nl": "map"
-            }
-
-            # Add commuinity UUID to query parameter
-            solr_query_params['q'] = solr_query_params['q'] + " AND owningComm:" + community_id
-
-            # Get date range for Solr query if time period is specified
-            if len(date_range) == 2:
-                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
-                if date_range[0] is not None and date_range[1] is not None:
-                    date_start = date_range[0]
-                    date_end = date_range[1]
-                    solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
-
-            # Make call to Solr for views statistics
-            response = self.solr.call(url=solr_url, params=solr_query_params)
-            self.logger.debug("Calling page %s of Solr item views in community: %s" %(str(results_current_page +1), response.url))
-
-            # Solr returns facets as a dict of dicts (see json.nl parameter)
-            views = response.json()["facet_counts"]["facet_fields"]
-            self.logger.info('Items in this batch : %s', str(len(views["id"].items())))
-
-            # Loop through list of item views
-            for item_id, item_views in views["id"].items():
-                self.logger.info("Updating community views stats with %s views from item: %s" %(str(item_views), item_id))
-                total_community_views = total_community_views + item_views
-
-            results_current_page += 1
-
-        self.logger.info("Total community views: %s" %(str(total_community_views)))
+        self.logger.info("Total community views: %s" %(str(results_num_found)))
         
         # Update database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_month = views_last_month + %i WHERE community_id = '%s'" %(total_community_views, community_id)))
-                    cursor.execute("UPDATE community_stats SET views_last_month = views_last_month + %i WHERE community_id = '%s'" %(total_community_views, community_id))
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_month = views_last_month + %i WHERE community_id = '%s'" %(results_num_found, community_id)))
+                    cursor.execute("UPDATE community_stats SET views_last_month = views_last_month + %i WHERE community_id = '%s'" %(results_num_found, community_id))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_year = views_last_year + %i WHERE community_id = '%s'" %(total_community_views, community_id)))
-                    cursor.execute("UPDATE community_stats SET views_last_year = views_last_year + %i WHERE community_id = '%s'" %(total_community_views, community_id))
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_year = views_last_year + %i WHERE community_id = '%s'" %(results_num_found, community_id)))
+                    cursor.execute("UPDATE community_stats SET views_last_year = views_last_year + %i WHERE community_id = '%s'" %(results_num_found, community_id))
                 else:
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_total = views_total + %i WHERE community_id = '%s'" %(total_community_views, community_id)))
-                    cursor.execute("UPDATE community_stats SET views_total = views_total + %i WHERE community_id = '%s'" %(total_community_views, community_id))
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_total = views_total + %i WHERE community_id = '%s'" %(results_num_found, community_id)))
+                    cursor.execute("UPDATE community_stats SET views_total = views_total + %i WHERE community_id = '%s'" %(results_num_found, community_id))
 
             # Commit changes
             db.commit()
@@ -269,14 +206,6 @@ class CommunityIndexer(Indexer):
         solr_query_params = {
             "q": "type:0",
             "fq": "isBot:false AND statistics_type:view AND bundleName:ORIGINAL",
-            "facet": "true",
-            "facet.field": "owningItem",
-            "facet.mincount": 1,
-            "facet.limit": 1,
-            "facet.offset": 0,
-            "stats": "true",
-            "stats.field": "owningItem",
-            "stats.calcdistinct": "true",
             "shards": shards,
             "rows": 0,
             "wt": "json"
@@ -297,88 +226,33 @@ class CommunityIndexer(Indexer):
                     solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
             else:
                 self.logger.error("Error creating date range.")
-        
-        # Total community downloads count
-        total_community_downloads = 0
-
+    
         # Make call to Solr for downloads statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
         self.logger.info("Calling Solr total item downloads in community: %s", response.url)
 
         try:
             # Get total number of items
-            results_totalNumFacets = response.json()["stats"]["stats_fields"]["owningItem"][
-                "countDistinct"
-            ]
-            self.logger.info("Solr downloads - total items: %s", str(results_totalNumFacets))
+            results_num_found = response.json()["response"]["numFound"]
+            self.logger.info("Solr downloads - total items: %s", str(results_num_found))
         except TypeError:
             self.logger.info("No item downloads to index.")
             return
 
-        # Calculate pagination
-        results_per_page = 100
-        results_num_pages = int(results_totalNumFacets / results_per_page)
-        self.logger.debug("%s total pages of results." %(str(results_num_pages+1)))
-        results_current_page = 0
-
-        # Iterate over Solr results
-        while results_current_page <= results_num_pages:
-            self.logger.info("Indexing page %s of %s pages of item downloads." %(str(results_current_page+1), str(results_num_pages+1)))
-
-            solr_query_params = {
-                "q": "type:0",
-                "fq": "isBot:false AND statistics_type:view AND bundleName:ORIGINAL",
-                "facet": "true",
-                "facet.field": "owningItem",
-                "facet.mincount": 1,
-                "facet.limit": results_per_page,
-                "facet.offset": results_current_page * results_per_page,
-                "shards": shards,
-                "rows": 0,
-                "wt": "json",
-                "json.nl": "map"
-            }
-
-            # Add community UUID to query parameter
-            solr_query_params['q'] = solr_query_params['q'] + " AND owningComm:" + community_id
-
-            # Get date range for Solr query if time period is specified
-            if len(date_range) == 2:
-                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
-                if date_range[0] is not None and date_range[1] is not None:
-                    date_start = date_range[0]
-                    date_end = date_range[1]
-                    solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
-
-            # Make call to Solr for views statistics
-            response = self.solr.call(url=solr_url, params=solr_query_params)
-            self.logger.debug("Calling page %s of Solr item downloads in community: %s" %(str(results_current_page +1), response.url))
-
-            # Solr returns facets as a dict of dicts (see json.nl parameter)
-            downloads = response.json()["facet_counts"]["facet_fields"]
-            self.logger.debug("Total number of items with downloads: %s" %(str(len(downloads))))
-
-            # Loop through list of item downloads
-            for item_id, item_downloads in downloads["owningItem"].items():
-                self.logger.info("Updating community downloads stats with %s views from item: %s" %(str(item_downloads), item_id))
-                total_community_downloads = total_community_downloads + item_downloads
-
-            results_current_page += 1
-
-        self.logger.info("Total community downloads: %s" %(str(total_community_downloads)))
+        self.logger.info("Total community downloads: %s" %(str(results_num_found)))
         
         # Update database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(total_community_downloads, community_id)))
-                    cursor.execute("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(total_community_downloads, community_id))
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(results_num_found, community_id)))
+                    cursor.execute("UPDATE community_stats SET downloads_last_month = downloads_last_month + %i WHERE community_id = '%s'" %(results_num_found, community_id))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_year = downloads_last_year + %i WHERE community_id = '%s'" %(total_community_downloads, community_id)))
-                    cursor.execute("UPDATE community_stats SET downloads_last_year = downloads_last_year + %i WHERE community_id = '%s'" %(total_community_downloads, community_id))
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_year = downloads_last_year + %i WHERE community_id = '%s'" %(results_num_found, community_id)))
+                    cursor.execute("UPDATE community_stats SET downloads_last_year = downloads_last_year + %i WHERE community_id = '%s'" %(results_num_found, community_id))
                 else:
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(total_community_downloads, community_id)))
-                    cursor.execute("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(total_community_downloads, community_id))
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(results_num_found, community_id)))
+                    cursor.execute("UPDATE community_stats SET downloads_total = downloads_total + %i WHERE community_id = '%s'" %(results_num_found, community_id))
 
             # Commit changes
             db.commit()
