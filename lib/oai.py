@@ -24,7 +24,7 @@ class DSpaceOai(object):
         self.oai_server = self.oai_server + 'request'
 
         self.limit = 100
-        self.sleepTime = 3
+        self.sleepTime = 1
         self.headers = {'User-Agent': 'OAIHarvester/2.0', 'Accept': 'text/html',
                'Accept-Encoding': 'compress, deflate'}
 
@@ -61,7 +61,7 @@ class DSpaceOai(object):
         return response
 
     def pause(self, wait_time):
-        self.logger.info("Pausing harvest process for %s seconds." %(str(wait_time)))
+        self.logger.info("Pausing harvest process for %s second(s)." %(str(wait_time)))
         sleep(wait_time)
 
     def get_records(self):
@@ -86,9 +86,13 @@ class DSpaceOai(object):
                     metadata = record.find('.//oai:metadata', self.ns)
                     if metadata:
                         identifier_node = metadata.find('.//dc:identifier', self.ns)
-                        self.logger.info("Looking at record identifier: %s : %s" %(identifier_node.tag, identifier_node.text))
-
-                        all_records.append(identifier_node.text)
+                        if identifier_node is not None and identifier_node.text is not None:
+                            self.logger.info("Looking at record identifier: %s : %s" %(identifier_node.tag, identifier_node.text))
+                            self.logger.info(identifier_node)
+                            if 'hdl.handle.net' in identifier_node.text:
+                                all_records.append(identifier_node.text)
+                            else:
+                                self.logger.debug("Identifier is not a handle URL: %s" %(identifier_node.text))
 
             # Check for resumptionToken
             token_match = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', records_response.text)
@@ -98,6 +102,11 @@ class DSpaceOai(object):
             token = token_match.group(1)
             self.logger.debug("resumptionToken: %s" %(token))
             params['resumptionToken'] = token
+
+            # Remove metadataPrefix from params
+            if 'metadataPrefix' in params:
+                params.pop('metadataPrefix')
+
             offset = offset + self.limit
 
             if self.sleepTime:
