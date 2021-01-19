@@ -3,8 +3,6 @@ import sys
 
 from optparse import OptionParser
 
-from database_manager import DatabaseManager
-from lib.api import DSpaceRestApi
 from lib.util import Utilities
 from dspace_reports.item_indexer import ItemIndexer
 
@@ -20,16 +18,7 @@ class RunItemIndexer():
 
         self.logger = logging.getLogger('dspace-reports')
 
-        # Create REST API object
-        self.api = DSpaceRestApi(rest_server=config['rest_server'])
-
-        # The time periods used to generate statistical reports
-        periods = ['month', 'year', 'all']
-
     def run(self):
-        # Create database manager
-        database_manager = DatabaseManager(config=self.config)
-
         # Create items stats indexer
         item_indexer = ItemIndexer(config=self.config)
         

@@ -52,15 +52,21 @@ class Indexer(object):
 
             date_range = [one_month_ago, today]
         elif time_period == 'year':
-            self.logger.info("Getting stats for current year.")
+            self.logger.info("Getting stats for current academic year.")
             dt = date.today()
             today = datetime.combine(dt, datetime.max.time()).isoformat() + 'Z'
             self.logger.debug("Current date: %s ", today)
             
-            first_day_of_year = datetime.combine((date(date.today().year, 1, 1)), datetime.min.time()).isoformat() + 'Z'
-            self.logger.debug("First day of year: %s ", first_day_of_year)
+            current_month = datetime.today().month
+            if current_month < 9:
+                fiscal_year = datetime.today().year - 1
+            else:
+                fiscal_year = datetime.today().year
 
-            date_range = [first_day_of_year, today]
+            first_day_of_academic_year = datetime.combine((date(fiscal_year, 9, 1)), datetime.min.time()).isoformat() + 'Z'
+            self.logger.debug("First day of academic year: %s ", first_day_of_academic_year)
+
+            date_range = [first_day_of_academic_year, today]
 
         self.logger.debug("Date range has %s dates." %(str(len(date_range))))
         return date_range

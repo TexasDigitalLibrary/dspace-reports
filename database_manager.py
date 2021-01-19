@@ -11,13 +11,13 @@ class DatabaseManager():
         'repository_id': 'Repository ID',
         'repository_name': 'Repository',
         'items_last_month': 'Items added last month',
-        'items_last_year': 'Items added last year',
+        'items_academic_year': 'Items added in academic year',
         'items_total': 'Total Items',
         'views_last_month': 'Item views last month',
-        'views_last_year': 'Item views last year',
+        'views_academic_year': 'Item views in academic year',
         'views_total': 'Total item views',
         'downloads_last_month': 'Item downloads last month',
-        'downloads_last_year': 'Item downloads last year',
+        'downloads_academic_year': 'Item downloads in academic year',
         'downloads_total': 'Total item downloads'
     }
 
@@ -27,13 +27,13 @@ class DatabaseManager():
         'community_url': 'Community URL',
         'parent_community_name': 'Parent Community Name',
         'items_last_month': 'Items added last month',
-        'items_last_year': 'Items added last year',
+        'items_academic_year': 'Items added in academic year',
         'items_total': 'Total Items',
         'views_last_month': 'Item views last month',
-        'views_last_year': 'Item views last year',
+        'views_academic_year': 'Item views in academic year',
         'views_total': 'Total item views',
         'downloads_last_month': 'Item downloads last month',
-        'downloads_last_year': 'Item downloads last year',
+        'downloads_academic_year': 'Item downloads in academic year',
         'downloads_total': 'Total item downloads'
     }
 
@@ -43,13 +43,13 @@ class DatabaseManager():
         'collection_name': 'Collection Name',
         'collection_url': 'Collection URL',
         'items_last_month': 'Items added last month',
-        'items_last_year': 'Items added last year',
+        'items_academic_year': 'Items added in academic year',
         'items_total': 'Total Items',
         'views_last_month': 'Item views last month',
-        'views_last_year': 'Item views last year',
+        'views_academic_year': 'Item views in academic year',
         'views_total': 'Total item views',
         'downloads_last_month': 'Item downloads last month',
-        'downloads_last_year': 'Item downloads last year',
+        'downloads_academic_year': 'Item downloads in academic year',
         'downloads_total': 'Total item downloads'
     }
 
@@ -59,10 +59,10 @@ class DatabaseManager():
         'item_name': 'Item Title',
         'item_url': 'Item URL',
         'views_last_month': 'Item views last month',
-        'views_last_year': 'Item views last year',
+        'items_academic_year': 'Items views in academic year',
         'views_total': 'Total item views',
         'downloads_last_month': 'Item downloads last month',
-        'downloads_last_year': 'Item downloads last year',
+        'downloads_academic_year': 'Item downloads in academic year',
         'downloads_total': 'Total item downloads'
     }
 
@@ -86,13 +86,13 @@ class DatabaseManager():
                         repository_id UUID PRIMARY KEY NOT NULL,
                         repository_name VARCHAR(255) NOT NULL,
                         items_last_month INTEGER DEFAULT 0,
-                        items_last_year INTEGER DEFAULT 0,
+                        items_academic_year INTEGER DEFAULT 0,
                         items_total INTEGER DEFAULT 0,
                         views_last_month INTEGER DEFAULT 0,
-                        views_last_year INTEGER DEFAULT 0,
+                        views_academic_year INTEGER DEFAULT 0,
                         views_total INTEGER DEFAULT 0,
                         downloads_last_month INTEGER DEFAULT 0,
-                        downloads_last_year INTEGER DEFAULT 0,
+                        downloads_academic_year INTEGER DEFAULT 0,
                         downloads_total INTEGER DEFAULT 0
                     )
                     """,
@@ -103,13 +103,13 @@ class DatabaseManager():
                         community_url VARCHAR(255) NOT NULL,
                         parent_community_name VARCHAR(255),
                         items_last_month INTEGER DEFAULT 0,
-                        items_last_year INTEGER DEFAULT 0,
+                        items_academic_year INTEGER DEFAULT 0,
                         items_total INTEGER DEFAULT 0,
                         views_last_month INTEGER DEFAULT 0,
-                        views_last_year INTEGER DEFAULT 0,
+                        views_academic_year INTEGER DEFAULT 0,
                         views_total INTEGER DEFAULT 0,
                         downloads_last_month INTEGER DEFAULT 0,
-                        downloads_last_year INTEGER DEFAULT 0,
+                        downloads_academic_year INTEGER DEFAULT 0,
                         downloads_total INTEGER DEFAULT 0
                     )
                     """,
@@ -120,13 +120,13 @@ class DatabaseManager():
                         collection_name VARCHAR(255) NOT NULL,
                         collection_url VARCHAR(255) NOT NULL,
                         items_last_month INTEGER DEFAULT 0,
-                        items_last_year INTEGER DEFAULT 0,
+                        items_academic_year INTEGER DEFAULT 0,
                         items_total INTEGER DEFAULT 0,
                         views_last_month INTEGER DEFAULT 0,
-                        views_last_year INTEGER DEFAULT 0,
+                        views_academic_year INTEGER DEFAULT 0,
                         views_total INTEGER DEFAULT 0,
                         downloads_last_month INTEGER DEFAULT 0,
-                        downloads_last_year INTEGER DEFAULT 0,
+                        downloads_academic_year INTEGER DEFAULT 0,
                         downloads_total INTEGER DEFAULT 0
                     )
                     """,
@@ -137,10 +137,10 @@ class DatabaseManager():
                         item_name VARCHAR(255) NOT NULL,
                         item_url VARCHAR(255) NOT NULL,
                         views_last_month INTEGER DEFAULT 0,
-                        views_last_year INTEGER DEFAULT 0,
+                        views_academic_year INTEGER DEFAULT 0,
                         views_total INTEGER DEFAULT 0,
                         downloads_last_month INTEGER DEFAULT 0,
-                        downloads_last_year INTEGER DEFAULT 0,
+                        downloads_academic_year INTEGER DEFAULT 0,
                         downloads_total INTEGER DEFAULT 0
                     )
                     """

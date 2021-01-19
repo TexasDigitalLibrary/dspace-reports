@@ -3,7 +3,6 @@ import sys
 
 from optparse import OptionParser
 
-from lib.api import DSpaceRestApi
 from lib.util import Utilities
 from dspace_reports.repository_indexer import RepositoryIndexer
 
@@ -18,12 +17,6 @@ class RunRepositoryIndexer():
         self.solr_server = config['solr_server']
 
         self.logger = logging.getLogger('dspace-reports')
-
-        # Create REST API object
-        self.api = DSpaceRestApi(rest_server=config['rest_server'])
-
-        # The time periods used to generate statistical reports
-        periods = ['month', 'year', 'all']
 
     def run(self):
         # Create items stats indexer

@@ -89,7 +89,7 @@ class DSpaceOai(object):
                         if identifier_node is not None and identifier_node.text is not None:
                             self.logger.info("Looking at record identifier: %s : %s" %(identifier_node.tag, identifier_node.text))
                             self.logger.info(identifier_node)
-                            if 'hdl.handle.net' in identifier_node.text:
+                            if 'handle' in identifier_node.text:
                                 all_records.append(identifier_node.text)
                             else:
                                 self.logger.debug("Identifier is not a handle URL: %s" %(identifier_node.text))

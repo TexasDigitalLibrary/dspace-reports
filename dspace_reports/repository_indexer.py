@@ -84,8 +84,8 @@ class RepositoryIndexer(Indexer):
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_last_month = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id)))
                     cursor.execute("UPDATE repository_stats SET items_last_month = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_last_year = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id)))
-                    cursor.execute("UPDATE repository_stats SET items_last_year = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id))
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_academic_year = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id)))
+                    cursor.execute("UPDATE repository_stats SET items_academic_year = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id))
                 else:
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_total = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id)))
                     cursor.execute("UPDATE repository_stats SET items_total = %i WHERE repository_id = '%s'" %(results_totalItems, repository_id))
@@ -146,8 +146,8 @@ class RepositoryIndexer(Indexer):
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET views_last_month = %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
                     cursor.execute("UPDATE repository_stats SET views_last_month = %i WHERE repository_id = '%s'" %(results_num_found, repository_id))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET views_last_year = %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
-                    cursor.execute("UPDATE repository_stats SET views_last_year = %i WHERE repository_id = '%s'" %(results_num_found, repository_id))
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET views_academic_year = %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
+                    cursor.execute("UPDATE repository_stats SET views_academic_year = %i WHERE repository_id = '%s'" %(results_num_found, repository_id))
                 else:
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET views_total = %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
                     cursor.execute("UPDATE repository_stats SET views_total = %i WHERE repository_id = '%s'" %(results_num_found, repository_id))
@@ -207,8 +207,8 @@ class RepositoryIndexer(Indexer):
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_last_month = downloads_last_month + %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
                     cursor.execute("UPDATE repository_stats SET downloads_last_month = downloads_last_month + %i WHERE repository_id = '%s'" %(results_num_found, repository_id))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_last_year = downloads_last_year + %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
-                    cursor.execute("UPDATE repository_stats SET downloads_last_year = downloads_last_year + %i WHERE repository_id = '%s'" %(results_num_found, repository_id))
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
+                    cursor.execute("UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + %i WHERE repository_id = '%s'" %(results_num_found, repository_id))
                 else:
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_total = downloads_total + %i WHERE repository_id = '%s'" %(results_num_found, repository_id)))
                     cursor.execute("UPDATE repository_stats SET downloads_total = downloads_total + %i WHERE repository_id = '%s'" %(results_num_found, repository_id))

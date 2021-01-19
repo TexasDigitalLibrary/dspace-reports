@@ -57,32 +57,29 @@ class DSpaceSolr(object):
         shards = f"{self.solr_server}statistics"
         statistics_core_years = []
 
-        self.logger.info("time_period in shards: %s", time_period)
+        # URL for Solr status to check active cores
+        solr_query_params = {"action": "STATUS", "wt": "json"}
+        solr_url = self.solr_server + "/admin/cores"
+        response = requests.get(solr_url, params=solr_query_params)
 
-        if time_period == 'all':
-            # URL for Solr status to check active cores
-            solr_query_params = {"action": "STATUS", "wt": "json"}
-            solr_url = self.solr_server + "/admin/cores"
-            response = requests.get(solr_url, params=solr_query_params)
+        if response.status_code == requests.codes.ok:
+            data = response.json()
 
-            if response.status_code == requests.codes.ok:
-                data = response.json()
+            # Iterate over active cores from Solr's STATUS response
+            for core in data["status"]:
+                # Pattern to match, for example: statistics-2018
+                pattern = re.compile("^statistics-[0-9]{4}$")
 
-                # Iterate over active cores from Solr's STATUS response
-                for core in data["status"]:
-                    # Pattern to match, for example: statistics-2018
-                    pattern = re.compile("^statistics-[0-9]{4}$")
+                if not pattern.match(core):
+                    continue
 
-                    if not pattern.match(core):
-                        continue
+                # Append current core to list
+                self.logger.debug("Adding Solr core: %s", core)
+                statistics_core_years.append(core)
 
-                    # Append current core to list
-                    self.logger.debug("Adding Solr core: %s", core)
-                    statistics_core_years.append(core)
-
-            if len(statistics_core_years) > 0:
-                for core in statistics_core_years:
-                    shards += f",{self.solr_server}{core}"
+        if len(statistics_core_years) > 0:
+            for core in statistics_core_years:
+                shards += f",{self.solr_server}{core}"
 
         self.logger.info("Using these shards to search for statistics: %s", shards)
         return shards
