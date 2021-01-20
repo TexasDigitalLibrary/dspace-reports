@@ -85,14 +85,14 @@ class DSpaceOai(object):
                 for record in records:
                     metadata = record.find('.//oai:metadata', self.ns)
                     if metadata:
-                        identifier_node = metadata.find('.//dc:identifier', self.ns)
-                        if identifier_node is not None and identifier_node.text is not None:
-                            self.logger.info("Looking at record identifier: %s : %s" %(identifier_node.tag, identifier_node.text))
-                            self.logger.info(identifier_node)
-                            if 'handle' in identifier_node.text:
-                                all_records.append(identifier_node.text)
-                            else:
-                                self.logger.debug("Identifier is not a handle URL: %s" %(identifier_node.text))
+                        identifier_nodes = metadata.findall('.//dc:identifier', self.ns)
+                        for identifier_node in identifier_nodes:
+                            if identifier_node is not None and identifier_node.text is not None:
+                                self.logger.info("Looking at record identifier: %s : %s" %(identifier_node.tag, identifier_node.text))
+                                if 'handle' in identifier_node.text:
+                                    all_records.append(identifier_node.text)
+                                else:
+                                    self.logger.debug("Identifier is not a handle URL: %s" %(identifier_node.text))
 
             # Check for resumptionToken
             token_match = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', records_response.text)
