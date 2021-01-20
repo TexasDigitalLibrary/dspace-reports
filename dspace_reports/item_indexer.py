@@ -68,7 +68,8 @@ class ItemIndexer(Indexer):
                         self.logger.error("Unable to find item in REST API: %s" %(record))
         
         self.logger.info("Total records in OAI-PMH feed: %s" %(str(len(records))))
-        self.logger.info("Total records missing in OAI-PMH feed: %s (%.0f%%)" %(str(count_missing_records), (100 * count_missing_records/total_records)))
+        if count_missing_records > 0 and total_records > 0:
+            self.logger.info("Total records missing in OAI-PMH feed: %s (%.0f%%)" %(str(count_missing_records), (100 * count_missing_records/total_records)))
 
         for time_period in self.time_periods:
             self.logger.info("Indexing Solr views for time period: %s ", time_period)
