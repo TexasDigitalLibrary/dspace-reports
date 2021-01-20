@@ -45,9 +45,9 @@ class Indexer(object):
     def get_date_range(self, time_period=None):
         date_range = []
         if time_period is None:
+            self.logger.debug("time_period of none given to get_date_range() method.")
             return date_range
 
-        self.logger
         if time_period == 'month':
             self.logger.info("Getting stats for last month.")
             dt = date.today()
