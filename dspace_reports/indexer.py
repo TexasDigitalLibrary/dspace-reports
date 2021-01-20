@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 from lib.api import DSpaceRestApi
 from lib.solr import DSpaceSolr
+from lib.util import Utilities
 
 
 class Indexer(object):
@@ -19,7 +20,12 @@ class Indexer(object):
         self.base_url = config['dspace_server'] + '/handle/'
         self.solr_server = config['solr_server']
 
-        self.logger = logging.getLogger('dspace-reports')
+        # Create utilities object
+        utilities = Utilities()
+
+        self.logger = utilities.load_logger(config=config)
+
+        #self.logger = logging.getLogger('dspace-reports')
 
         # Create REST API object
         self.rest = DSpaceRestApi(rest_server=config['rest_server'])

@@ -22,7 +22,11 @@ class ItemIndexer(Indexer):
     def index(self):
         # Get list of identifiers from OAI-PMH feed
         records = self.oai.get_records()
-        self.logger.debug("Found %s records in OAI-PMH feed." %(str(len(records))))
+        total_records = len(records)
+        self.logger.info("Found %s records in OAI-PMH feed." %(str(total_records)))
+
+        # Keep a count of records that cannot be found by their metadata
+        count_missing_records = 0
 
         # Iterate over OAI-PMH records and call REST API for addiional metadata
         with Database(self.config['statistics_db']) as db:
@@ -60,7 +64,11 @@ class ItemIndexer(Indexer):
                         cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url))
                         db.commit()
                     else:
-                        self.logger.error('Unable to find item in REST API.')
+                        count_missing_records += 1
+                        self.logger.error("Unable to find item in REST API: %s" %(record))
+        
+        self.logger.info("Total records in OAI-PMH feed: %s" %(str(len(records))))
+        self.logger.info("Total records missing in OAI-PMH feed: %s (%.0f%%)" %(str(count_missing_records), (100 * total_records/count_missing_records)))
 
         for time_period in self.time_periods:
             self.logger.info("Indexing Solr views for time period: %s ", time_period)

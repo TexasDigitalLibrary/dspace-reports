@@ -32,8 +32,10 @@ class Utilities(object):
             log_path = log_path + '/'
 
         log_file = config['log_file'] or 'dspace-reports.log'
-
-        log_level_string = config['log_level'] or 'INFO'
+        
+        log_level_string = config['log_level']
+        print('Creating logger with log level: ' + log_level_string)
+        
         if log_level_string == 'INFO':
             log_level = logging.INFO
         elif log_level_string == 'DEBUG':

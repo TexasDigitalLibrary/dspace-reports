@@ -70,6 +70,9 @@ def main():
         print("Unable to load configuration.")
         sys.exit(0)
 
+    # Set up logging
+    logger = utilities.load_logger(config=config)
+    
     # Ensure work_dir has trailing slash
     work_dir = config['work_dir']
     if work_dir[len(work_dir)-1] != '/':

@@ -217,16 +217,19 @@ class CommunityIndexer(Indexer):
                     views = response.json()["facet_counts"]["facet_fields"]
                     # iterate over the facetField dict and get the ids and views
                     for id, community_views in views["owningComm"].items():
-                        if time_period == 'month':
-                            self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, id)))
-                            cursor.execute("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, id))
-                        elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, id)))
-                            cursor.execute("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, id))
+                        if len(id) == 36:
+                            if time_period == 'month':
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, id)))
+                                cursor.execute("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, id))
+                            elif time_period == 'year':
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, id)))
+                                cursor.execute("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, id))
+                            else:
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, id)))
+                                cursor.execute("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, id))
                         else:
-                            self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, id)))
-                            cursor.execute("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, id))
-            
+                            self.logger.warn("owningComm value is not a UUID: %s", id)
+
                     # Commit changes to database
                     db.commit()
 
@@ -319,16 +322,19 @@ class CommunityIndexer(Indexer):
                     downloads = response.json()["facet_counts"]["facet_fields"]
                     # iterate over the facetField dict and get the ids and views
                     for id, community_downloads in downloads["owningComm"].items():
-                        if time_period == 'month':
-                            self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, id)))
-                            cursor.execute("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, id))
-                        elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, id)))
-                            cursor.execute("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, id))
+                        if len(id) == 36:
+                            if time_period == 'month':
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, id)))
+                                cursor.execute("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, id))
+                            elif time_period == 'year':
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, id)))
+                                cursor.execute("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, id))
+                            else:
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, id)))
+                                cursor.execute("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, id))
                         else:
-                            self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, id)))
-                            cursor.execute("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, id))
-            
+                            self.logger.warn("owningComm value is not a UUID: %s", id)
+
                     # Commit changes to database
                     db.commit()
 
