@@ -195,16 +195,16 @@ class ItemIndexer(Indexer):
 
         # Solr params
         solr_query_params = {
-            "q": f"type:0 AND id:/.{{36}}/",
+            "q": f"type:0 AND owningItem:/.{{36}}/",
             "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
-            "fl": "id",
+            "fl": "owningItem",
             "facet": "true",
-            "facet.field": "id",
+            "facet.field": "owningItem",
             "facet.mincount": 1,
             "facet.limit": 1,
             "facet.offset": 0,
             "stats": "true",
-            "stats.field": "id",
+            "stats.field": "owningItem",
             "stats.calcdistinct": "true",
             "shards": shards,
             "rows": 0,
@@ -230,7 +230,7 @@ class ItemIndexer(Indexer):
 
         try:
             # get total number of distinct facets (countDistinct)
-            results_totalNumFacets = response.json()["stats"]["stats_fields"]["id"][
+            results_totalNumFacets = response.json()["stats"]["stats_fields"]["owningItem"][
                 "countDistinct"
             ]
         except TypeError:
@@ -252,11 +252,11 @@ class ItemIndexer(Indexer):
 
                     # Solr params for current page
                     solr_query_params = {
-                        "q": f"type:0 AND id:/.{{36}}/",
+                        "q": f"type:0 AND owningItem:/.{{36}}/",
                         "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
-                        "fl": "id",
+                        "fl": "owningItem",
                         "facet": "true",
-                        "facet.field": "id",
+                        "facet.field": "owningItem",
                         "facet.mincount": 1,
                         "facet.limit": results_per_page,
                         "facet.offset": results_current_page * results_per_page,
@@ -272,14 +272,14 @@ class ItemIndexer(Indexer):
                             date_start = date_range[0]
                             date_end = date_range[1]
                             solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
-                            
+
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr item downloads query: %s", response.url)
  
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
                     # iterate over the facetField dict and get the ids and views
-                    for id, item_downloads in downloads["id"].items():
+                    for id, item_downloads in downloads["owningItem"].items():
                         if time_period == 'month':
                             self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_last_month = %s WHERE item_id = %s", (item_downloads, id)))
                             cursor.execute("UPDATE item_stats SET downloads_last_month = %s WHERE item_id = %s", (item_downloads, id))
