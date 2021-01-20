@@ -96,6 +96,8 @@ class CommunityIndexer(Indexer):
                     date_start = date_range[0]
                     date_end = date_range[1]
                     solr_query_params["fq"] = f"dc.date.accessioned_dt:[{date_start} TO {date_end}]"
+                else:
+                    self.logger.error("Error creating date range.")
             else:
                 self.logger.error("Error creating date range.")
 
