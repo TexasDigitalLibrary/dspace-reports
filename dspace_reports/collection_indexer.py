@@ -214,6 +214,13 @@ class CollectionIndexer(Indexer):
                         "json.nl": "map",
                     }
 
+                    if len(date_range) == 2:
+                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        if date_range[0] is not None and date_range[1] is not None:
+                            date_start = date_range[0]
+                            date_end = date_range[1]
+                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr collection views query: %s", response.url)
  
@@ -317,6 +324,13 @@ class CollectionIndexer(Indexer):
                         "json.nl": "map",
                     }
 
+                    if len(date_range) == 2:
+                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        if date_range[0] is not None and date_range[1] is not None:
+                            date_start = date_range[0]
+                            date_end = date_range[1]
+                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                            
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr collection downloads query: %s", response.url)
  
