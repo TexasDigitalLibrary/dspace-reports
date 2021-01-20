@@ -192,10 +192,10 @@ def main():
     # Store email parameter
     email = options.email
 
-    # Create stats indexer
+    # Create reports generator
     reports = RunReports(config=config, output_dir=output_dir, email=email)
     
-    # Get item statistics from Solr
+    # Generate stats reports from database
     reports.run()
 
 
