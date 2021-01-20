@@ -31,7 +31,6 @@ def main():
 
     parser.add_option("-c", "--config", dest="config_file", default="config/application.yml", help="Configuration file")
     parser.add_option("-o", "--output_dir", dest="output_dir", help="Directory for results files.")
-    parser.add_option("-e", "--email", action="store_true", dest="email", default=False, help="Email to receive reports")
 
     (options, args) = parser.parse_args()
 
