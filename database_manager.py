@@ -59,7 +59,7 @@ class DatabaseManager():
         'item_name': 'Item Title',
         'item_url': 'Item URL',
         'views_last_month': 'Item views last month',
-        'items_academic_year': 'Items views in academic year',
+        'views_academic_year': 'Item views in academic year',
         'views_total': 'Total item views',
         'downloads_last_month': 'Item downloads last month',
         'downloads_academic_year': 'Item downloads in academic year',
