@@ -41,7 +41,7 @@ class RepositoryIndexer(Indexer):
 
         # Create base Solr URL
         solr_url = self.solr_server + "/search/select"
-        self.logger.debug("tdl solr_url: %s" %(solr_url))
+        self.logger.debug("solr_url: %s" %(solr_url))
         
         # Get Solr shards
         shards = self.solr.get_statistics_shards(time_period)
