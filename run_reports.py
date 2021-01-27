@@ -40,19 +40,23 @@ class RunReports():
         reports = [
             {
                 'name': 'repository',
-                'table': 'repository_stats'
+                'table': 'repository_stats',
+                'orderBy': 'repository_name'
             },
             {
                 'name': 'communities',
-                'table': 'community_stats'
+                'table': 'community_stats',
+                'orderBy': 'parent_community_name'
             },
             {
                 'name': 'collections',
-                'table': 'collection_stats'
+                'table': 'collection_stats',
+                'orderBy': 'parent_community_name'
             },
             {
                 'name': 'items',
-                'table': 'item_stats'
+                'table': 'item_stats',
+                'orderBy': 'collection_name'
             }
         ]
 
@@ -87,8 +91,8 @@ class RunReports():
 
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                print(cursor.mogrify("SELECT * FROM %s" %(report['table'])))
-                cursor.execute("SELECT * FROM %s" %(report['table']))
+                print(cursor.mogrify("SELECT * FROM %s ORDER BY %s ASC" %(report['table'], report['orderBy'])))
+                cursor.execute("SELECT * FROM %s ORDER BY %s ASC" %(report['table'], report['orderBy']))
                         
                 desc = cursor.description
                 column_names = [col[0] for col in desc]
