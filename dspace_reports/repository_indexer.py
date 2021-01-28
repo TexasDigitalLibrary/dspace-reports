@@ -49,6 +49,8 @@ class RepositoryIndexer(Indexer):
         # Default Solr params
         solr_query_params = {
             "q": "search.resourcetype:2",
+            "start": "0",
+            "rows": "0",
             "wt": "json"
         }
 
