@@ -5,7 +5,7 @@ venv
 config/*.yml
 
 # Logs
-/logs/*
+/logs/*.log
 
 # VS Code
 *.code-workspace
