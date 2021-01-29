@@ -60,8 +60,8 @@ class ItemIndexer(Indexer):
                         # Create handle URL for item
                         item_url = self.base_url + item['handle']
 
-                        self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url)))
-                        cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s)", (item_collection_name, item_id, item_name, item_url))
+                        self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_collection_name, item_id, item_name, item_url)))
+                        cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_collection_name, item_id, item_name, item_url))
                         db.commit()
                     else:
                         count_missing_records += 1
