@@ -35,7 +35,8 @@ class RunReports():
         # Setup logging
         self.logger = logging.getLogger('dspace-reports')
 
-    def run(self): 
+    def run(self):
+        self.logger.info("Begin running all reports.")
         # Stats reports to create
         reports = [
             {
@@ -79,6 +80,8 @@ class RunReports():
         if excel_report_file and self.email:
             self.logger.info("Emailing report to address list in configuration.")
             self.email.email_report_admins(report_file_path=excel_report_file)
+        
+        self.logger.info("Finished running all reports.")
 
     def create_csv_report(self, report=None):
         if report is None:

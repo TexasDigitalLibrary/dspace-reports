@@ -22,6 +22,8 @@ class RunIndexer():
         self.logger = logging.getLogger('dspace-reports')
 
     def run(self):
+        self.logger.info("Begin running all indexing.")
+
         # Create items stats indexer
         repository_indexer = RepositoryIndexer(config=self.config)
         
@@ -46,6 +48,7 @@ class RunIndexer():
         # Index items stats from Solr
         item_indexer.index()
 
+        self.logger.info("Finished running all indexing.")
 
 def main():
     parser = OptionParser()
