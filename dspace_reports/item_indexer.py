@@ -26,13 +26,15 @@ class ItemIndexer(Indexer):
         self.logger.info("Found %s records in OAI-PMH feed." %(str(total_records)))
 
         # Keep a count of records that cannot be found by their metadata
+        count_records = 0
         count_missing_records = 0
 
         # Iterate over OAI-PMH records and call REST API for addiional metadata
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 for record in records:
-                    self.logger.debug("Calling REST API for record: %s" %(record))
+                    count_records = count_records + 1
+                    self.logger.info("(%s/%s) - Calling REST API for record: %s" %(str(count_records), str(total_records), record))
 
                     metadata_entry = '{"key":"dc.identifier.uri", "value":"%s"}' %(record)
                     items = self.rest.find_items_by_metadata_field(metadata_entry=metadata_entry, expand=['parentCollection'])
@@ -46,6 +48,10 @@ class ItemIndexer(Indexer):
                         if 'parentCollection' in item:
                             item_collection = item['parentCollection']
                             item_collection_name = item_collection['name']
+
+                        if len(item_collection_name) > 255:
+                            self.logger.debug("Collection name is longer than 255 characters. It will be shortened to that length.")
+                            item_collection_name = item_collection_name[0:251] + "..."
                         
                             self.logger.info("item collection: %s " %(item_collection_name))
 

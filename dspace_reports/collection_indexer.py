@@ -53,6 +53,10 @@ class CollectionIndexer(Indexer):
                 collection_url = self.base_url + collection_handle
                 self.logger.info("Loading collection: %s (%s)..." %(collection_name, collection_id))
 
+                if len(collection_name) > 255:
+                    self.logger.debug("Collection name is longer than 255 characters. It will be shortened to that length.")
+                    collection_name = collection_name[0:251] + "..."
+
                 # Insert the collection into the database
                 with Database(self.config['statistics_db']) as db:
                     with db.cursor() as cursor:
