@@ -43,9 +43,6 @@ class RepositoryIndexer(Indexer):
         solr_url = self.solr_server + "/search/select"
         self.logger.debug("solr_url: %s" %(solr_url))
         
-        # Get Solr shards
-        shards = self.solr.get_statistics_shards(time_period)
-        
         # Default Solr params
         solr_query_params = {
             "q": "search.resourcetype:2",
