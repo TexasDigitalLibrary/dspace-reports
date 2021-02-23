@@ -16,6 +16,10 @@ work_dir: '/tmp'
 log_path: 'logs'
 log_file: 'statistics-reports.log'
 log_level: 'INFO'
+smtp_host: 'localhost'
+smtp_port: 25
+smtp_username: 'username'
+smtp_password: 'password'
 from_email: 'admin@example.org'
 admin_emails:
         - email1
