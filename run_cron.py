@@ -8,17 +8,6 @@ from run_indexer import RunIndexer
 from run_reports import RunReports
 
 
-class RunCron():
-    def __init__(self, config=None):
-        if config is None:
-            print('A configuration file required to create the stats indexer.')
-            return
-
-        self.config = config
-        self.solr_server = config['solr_server']
-
-        self.logger = logging.getLogger('dspace-reports')
-
 def main():
     parser = OptionParser()
 
@@ -43,6 +32,9 @@ def main():
         print("Unable to load configuration.")
         sys.exit(0)
 
+    # Set up logging
+    logger = utilities.load_logger(config=config)
+    
     # Ensure work_dir has trailing slash
     work_dir = config['work_dir']
     if work_dir[len(work_dir)-1] != '/':
@@ -62,13 +54,13 @@ def main():
     email = options.email
 
     # Create stats indexer
-    indexer = RunIndexer(config=config)
+    indexer = RunIndexer(config=config, logger=logger)
     
     # Get item statistics from Solr
     indexer.run()
 
     # Create reports generator
-    reports = RunReports(config=config, output_dir=output_dir, email=email)
+    reports = RunReports(config=config, output_dir=output_dir, email=email, logger=logger)
     
     # Generate stats reports from database
     reports.run()

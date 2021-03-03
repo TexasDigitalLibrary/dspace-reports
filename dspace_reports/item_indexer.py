@@ -7,8 +7,8 @@ from dspace_reports.indexer import Indexer
 
 
 class ItemIndexer(Indexer):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, logger):
+        super().__init__(config, logger)
 
         # Create OAI-PMH server object
         self.oai = DSpaceOai(oai_server=config['oai_server'])

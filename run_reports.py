@@ -12,7 +12,7 @@ from lib.util import Utilities
 
 
 class RunReports():
-    def __init__(self, config=None, output_dir=None, email=False):
+    def __init__(self, config=None, output_dir=None, email=False, logger=None):
         if config is None:
             print('A configuration file required to generate stats reports.')
             return
@@ -32,8 +32,11 @@ class RunReports():
          # Create email object
         self.email = Email(config=config)
 
-        # Setup logging
-        self.logger = logging.getLogger('dspace-reports')
+        # Set up logging
+        if logger is not None:
+            self.logger = logger
+        else:
+            self.logger = logging.getLogger('dspace-reports')
 
     def run(self):
         self.logger.info("Begin running all reports.")
@@ -200,7 +203,7 @@ def main():
     email = options.email
 
     # Create reports generator
-    reports = RunReports(config=config, output_dir=output_dir, email=email)
+    reports = RunReports(config=config, output_dir=output_dir, email=email, logger=logger)
     
     # Generate stats reports from database
     reports.run()

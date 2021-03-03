@@ -11,39 +11,43 @@ from dspace_reports.item_indexer import ItemIndexer
 
 
 class RunIndexer():
-    def __init__(self, config=None):
+    def __init__(self, config=None, logger=None):
         if config is None:
             print('A configuration file required to create the stats indexer.')
-            return
+            sys.exit(1)
 
         self.config = config
         self.solr_server = config['solr_server']
 
-        self.logger = logging.getLogger('dspace-reports')
+        # Set up logging
+        if logger is not None:
+            self.logger = logger
+        else:
+            self.logger = logging.getLogger('dspace-reports')
 
     def run(self):
         self.logger.info("Begin running all indexing.")
 
         # Create items stats indexer
-        repository_indexer = RepositoryIndexer(config=self.config)
+        repository_indexer = RepositoryIndexer(config=self.config, logger=self.logger)
         
         # Index repository stats from Solr
         repository_indexer.index()
 
         # Create communities stats indexer
-        community_indexer = CommunityIndexer(config=self.config)
+        community_indexer = CommunityIndexer(config=self.config, logger=self.logger)
         
         # Index communities stats from Solr
         community_indexer.index()
 
         # Create collections stats indexer
-        collection_indexer = CollectionIndexer(config=self.config)
+        collection_indexer = CollectionIndexer(config=self.config, logger=self.logger)
         
         # Index collections stats from Solr
         collection_indexer.index()
 
         # Create items stats indexer
-        item_indexer = ItemIndexer(config=self.config)
+        item_indexer = ItemIndexer(config=self.config, logger=self.logger)
         
         # Index items stats from Solr
         item_indexer.index()
@@ -92,7 +96,7 @@ def main():
         sys.exit(0)
 
     # Create stats indexer
-    indexer = RunIndexer(config=config)
+    indexer = RunIndexer(config=config, logger=logger)
     
     # Get item statistics from Solr
     indexer.run()

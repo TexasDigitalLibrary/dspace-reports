@@ -8,15 +8,19 @@ from dspace_reports.repository_indexer import RepositoryIndexer
 
 
 class RunRepositoryIndexer():
-    def __init__(self, config=None):
+    def __init__(self, config=None, logger=None):
         if config is None:
-            print('A configuration file required to create the stats indexer.')
-            return
+            print("ERROR: A configuration file required to create the stats indexer.")
+            sys.exit(1)
 
         self.config = config
         self.solr_server = config['solr_server']
 
-        self.logger = logging.getLogger('dspace-reports')
+        # Set up logging
+        if logger is not None:
+            self.logger = logger
+        else:
+            self.logger = logging.getLogger('dspace-reports')
 
     def run(self):
         # Create items stats indexer
@@ -46,8 +50,8 @@ def main():
     print("Loading configuration from file: %s", options.config_file)
     config = utilities.load_config(options.config_file)
     if not config:
-        print("Unable to load configuration.")
-        sys.exit(0)
+        print("ERROR: Unable to load configuration.")
+        sys.exit(1)
 
     # Set up logging
     logger = utilities.load_logger(config=config)
@@ -65,10 +69,11 @@ def main():
     # Ensure output_dir exists
     output_dir_exists = utilities.ensure_directory_exists(output_dir)
     if output_dir_exists is False:
-        sys.exit(0)
+        logger.error("Output directory does not exist.")
+        sys.exit(1)
 
     # Create stats indexer
-    indexer = RunRepositoryIndexer(config=config)
+    indexer = RunRepositoryIndexer(config=config, logger=logger)
     
     # Get item statistics from Solr
     indexer.run()

@@ -11,21 +11,20 @@ from lib.util import Utilities
 
 
 class Indexer(object):
-    def __init__(self, config):
+    def __init__(self, config=None, logger=None):
         if config is None:
-            print('A configuration file required to create the stats indexer.')
-            return
+            print("ERROR: A configuration file required to create the stats indexer.")
+            sys.exit(1)
 
         self.config = config
         self.base_url = config['dspace_server'] + '/handle/'
         self.solr_server = config['solr_server']
 
-        # Create utilities object
-        utilities = Utilities()
-
-        self.logger = utilities.load_logger(config=config)
-
-        #self.logger = logging.getLogger('dspace-reports')
+        # Set up logging
+        if logger is not None:
+            self.logger = logger
+        else:
+            self.logger = logging.getLogger('dspace-reports')
 
         # Create REST API object
         self.rest = DSpaceRestApi(rest_server=config['rest_server'])
