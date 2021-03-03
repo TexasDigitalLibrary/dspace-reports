@@ -59,6 +59,7 @@ class Email(object):
 
         # Get SMTP configuration 
         smtp_host = self.config['smtp_host']
+        smtp_auth = self.config['smtp_auth']
         smtp_port = self.config['smtp_port']
         smtp_username = self.config['smtp_username']
         smtp_password = self.config['smtp_password']
@@ -66,7 +67,9 @@ class Email(object):
         # Send email
         self.logger.info('Sending DSpace report to {email}.'.format(email=to_email))
         server = smtplib.SMTP(smtp_host, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
+        if smtp_auth == 'tls':
+            server.starttls()
+        if smtp_username and smtp_password:
+            server.login(smtp_username, smtp_password)
         server.send_message(message)
         server.quit()
