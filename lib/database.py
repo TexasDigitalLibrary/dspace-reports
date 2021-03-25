@@ -5,6 +5,7 @@ import logging
 
 class Database(object):
     def __init__(self, config):
+        self.config = config
         self._connection_uri = f"dbname={config['name']} user={config['username']} password={config['password']} host={config['host']} port={config['port']}"
         self.logger = logging.getLogger('dspace-reports')
 
@@ -20,13 +21,13 @@ class Database(object):
 
     def create_connection(self):
         # Debug information
-        self.logger.info("Attempting to connect to Dataverse database: %s (host), %s (database), %s (username) ******** (password).", self.host, self.database, self.username)
+        self.logger.info("Attempting to connect to Dataverse database: %s (host), %s (database), %s (username) ******** (password).", self.config['host'], self.config['name'], self.config['username'])
 
         # Create connection to database
         try:
             self.connection = psycopg2.connect(self._connection_uri)
             return True
-        except Exception as e:
+        except Exception:
             self.logger.error("Cannot connect to database. Please check connection information and try again.")
             return False
 
