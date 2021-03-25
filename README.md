@@ -4,8 +4,6 @@ A python3-based tool to generate and email statistical reports for [DSpace](http
 
 ## Requirements
 
------
-
 - Python 3.6+
 - PostgreSQL 9.6+
 - DSpace 6.x repository **
@@ -13,8 +11,6 @@ A python3-based tool to generate and email statistical reports for [DSpace](http
 ** If your Solr index contains statistics from legacy DSpace 5.x or earlier instances, then the quality of the reports will go up significantly if you have migrated the old statistics to the new UUID identifiers in DSpace 6. [See the DSpace Wiki for more information](https://wiki.lyrasis.org/display/DSDOC6x/SOLR+Statistics+Maintenance#SOLRStatisticsMaintenance-UpgradeLegacyDSpaceObjectIdentifiers(pre-6xstatistics)toDSpace6xUUIDIdentifiers)
 
 ## Python 3 Virtual Environment Setup
-
------
 
 ```bash
 python3 -m venv venv
@@ -24,8 +20,6 @@ pipenv install
 ```
 
 ## Configuration
-
------
 
 ```bash
 cp config/application.yml.sample config/application.yml
@@ -66,8 +60,6 @@ admin_emails:
 Configure application.yml according to your particular environment. The admin_emails list in the configuration refers to the email addresses that will receive the stats reports if the email flag is set when running `run_reports.py` or `run_cron.py` (see below).
 
 ## Usage
-
------
 
 **NOTE: All of the following commands assume that the user is in the virutal environment.**
 
@@ -165,8 +157,6 @@ python run_cron.py -c config/application.yml -o /tmp/reports -e
 ```
 
 ## License
-
------
 
 This code is licensed under the [GNU General Public License (GPL) V3](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
