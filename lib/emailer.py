@@ -8,7 +8,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 
 
-class Email(object):
+class Emailer(object):
     def __init__(self, config=None):
         self.config = config
         self.logger = logging.getLogger('dspace-reports')

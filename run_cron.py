@@ -13,7 +13,7 @@ def main():
 
     parser.add_option("-c", "--config", dest="config_file", default="config/application.yml", help="Configuration file")
     parser.add_option("-o", "--output_dir", dest="output_dir", help="Directory for results files.")
-    parser.add_option("-e", "--email", action="store_true", dest="email", default=False, help="Email to receive reports")
+    parser.add_option("-e", "--email", action="store_true", dest="send_email", default=False, help="Send email with stats reports?")
 
     (options, args) = parser.parse_args()
 
@@ -50,8 +50,8 @@ def main():
     if output_dir_exists is False:
         sys.exit(0)
         
-    # Store email parameter
-    email = options.email
+    # Store send email parameter
+    send_email = options.send_email
 
     # Create stats indexer
     indexer = RunIndexer(config=config, logger=logger)
@@ -60,7 +60,7 @@ def main():
     indexer.run()
 
     # Create reports generator
-    reports = RunReports(config=config, output_dir=output_dir, email=email, logger=logger)
+    reports = RunReports(config=config, output_dir=output_dir, send_email=send_email, logger=logger)
     
     # Generate stats reports from database
     reports.run()

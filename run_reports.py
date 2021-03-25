@@ -6,13 +6,13 @@ from optparse import OptionParser
 from datetime import datetime
 
 from lib.database import Database
-from lib.email import Email
+from lib.emailer import Emailer
 from lib.output import Output
 from lib.util import Utilities
 
 
 class RunReports():
-    def __init__(self, config=None, output_dir=None, email=False, logger=None):
+    def __init__(self, config=None, output_dir=None, send_email=False, logger=None):
         if config is None:
             print('A configuration file required to generate stats reports.')
             return
@@ -24,13 +24,13 @@ class RunReports():
         # Vars
         self.config = config
         self.output_dir = output_dir
-        self.email = email
+        self.send_email = send_email
 
         # Create output object
         self.output = Output(config=config)
         
          # Create email object
-        self.email = Email(config=config)
+        self.emailer = Emailer(config=config)
 
         # Set up logging
         if logger is not None:
@@ -80,9 +80,9 @@ class RunReports():
 
         # Email Excel file to email address list in the configuration
         self.logger.info("Emailing Excel file to admin addresses in the configuration.")
-        if excel_report_file and self.email:
+        if self.send_email and self.emailer and excel_report_file:
             self.logger.info("Emailing report to address list in configuration.")
-            self.email.email_report_admins(report_file_path=excel_report_file)
+            self.emailer.email_report_admins(report_file_path=excel_report_file)
         
         self.logger.info("Finished running all reports.")
 
@@ -162,7 +162,7 @@ def main():
 
     parser.add_option("-c", "--config", dest="config_file", default="config/application.yml", help="Configuration file")
     parser.add_option("-o", "--output_dir", dest="output_dir", help="Directory for results files.")
-    parser.add_option("-e", "--email", action="store_true", dest="email", default=False, help="Email to receive reports")
+    parser.add_option("-e", "--email", action="store_true", dest="send_email", default=False, help="Send email with stats reports?")
 
     (options, args) = parser.parse_args()
 
@@ -200,10 +200,10 @@ def main():
         sys.exit(0)
 
     # Store email parameter
-    email = options.email
+    send_email = options.send_email
 
     # Create reports generator
-    reports = RunReports(config=config, output_dir=output_dir, email=email, logger=logger)
+    reports = RunReports(config=config, output_dir=output_dir, send_email=send_email, logger=logger)
     
     # Generate stats reports from database
     reports.run()
