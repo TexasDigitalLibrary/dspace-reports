@@ -61,7 +61,7 @@ Configure application.yml according to your particular environment. The admin_em
 
 ## Usage
 
-**NOTE: All of the following commands assume that the user is in the virutal environment.**
+**NOTE: All of the following commands assume that the user is in the virtual environment.**
 
 ### Database
 
