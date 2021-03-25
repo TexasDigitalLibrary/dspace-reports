@@ -13,7 +13,7 @@ class Utilities(object):
         path = config_file
 
         if not path or not os.path.isfile(path):
-            print('Configuration file is missing.')
+            print("Configuration file is missing.")
             return False
 
         with open(config_file, 'r') as f:
@@ -23,7 +23,7 @@ class Utilities(object):
 
     def load_logger(self, config=None):
         if config is None:
-            print('No configuration given, cannot create logger.')
+            print("No configuration given, cannot create logger.")
             return False
 
         # Set variables
@@ -34,7 +34,7 @@ class Utilities(object):
         log_file = config['log_file'] or 'dspace-reports.log'
         
         log_level_string = config['log_level']
-        print('Creating logger with log level: ' + log_level_string)
+        print("Creating logger with log level: %s" % log_level_string)
         
         if log_level_string == 'INFO':
             log_level = logging.INFO
