@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'dspace-reports',
-    version='0.1',
+    version='1.0.0-SNAPSHOT',
     url = 'https://github.com/TexasDigitalLibrary/dspace-reports',
     author = 'Nicholas Woodward',
     author_email = 'njw@austin.utexas.edu',
