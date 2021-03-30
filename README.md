@@ -160,4 +160,6 @@ python run_cron.py -c config/application.yml -o /tmp/reports -e
 
 This code is licensed under the [GNU General Public License (GPL) V3](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
+## Thanks
+
 **NOTE: Special thanks to the [DSpace Statistics API](https://github.com/ilri/dspace-statistics-api) project from which the Solr queries for views and downloads in this project are based.**
