@@ -8,7 +8,7 @@ A python3-based tool to generate and email statistical reports for [DSpace](http
 - PostgreSQL 9.6+
 - DSpace 6.x repository **
 
-** If your Solr index contains statistics from legacy DSpace 5.x or earlier instances, then the quality of the reports will go up significantly if you have migrated the old statistics to the new UUID identifiers in DSpace 6. [See the DSpace Wiki for more information](https://wiki.lyrasis.org/display/DSDOC6x/SOLR+Statistics+Maintenance#SOLRStatisticsMaintenance-UpgradeLegacyDSpaceObjectIdentifiers(pre-6xstatistics)toDSpace6xUUIDIdentifiers)
+** If your Solr index contains statistics from legacy DSpace 5.x or earlier instances, then the quality of the reports will go up significantly if you have migrated the old statistics to the new UUID identifiers in DSpace 6. See the [DSpace Documentation](https://wiki.lyrasis.org/display/DSDOC6x/SOLR+Statistics+Maintenance#SOLRStatisticsMaintenance-UpgradeLegacyDSpaceObjectIdentifiers(pre-6xstatistics)toDSpace6xUUIDIdentifiers) for more information
 
 ## Python 3 Virtual Environment Setup
 
