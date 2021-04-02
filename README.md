@@ -57,7 +57,7 @@ admin_emails:
         - email2
 ```
 
-Configure application.yml according to your particular environment. The admin_emails list in the configuration refers to the email addresses that will receive the stats reports if the email flag is set when running `run_reports.py` or `run_cron.py` (see below).
+Configure application.yml according to your particular environment. The admin_emails list in the configuration refers to the email address(es) that will receive the stats reports if the email flag is set when running `run_reports.py` or `run_cron.py` (see below).
 
 ## Usage
 
