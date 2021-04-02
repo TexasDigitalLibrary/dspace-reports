@@ -48,7 +48,7 @@ log_file: 'statistics-reports.log'
 log_level: 'INFO'
 smtp_host: 'localhost'
 smtp_auth: 'tls'
-smtp_port: 25
+smtp_port: 587
 smtp_username: 'username'
 smtp_password: 'password'
 from_email: 'admin@example.org'
