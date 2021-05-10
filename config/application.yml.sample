@@ -3,7 +3,7 @@ dspace_server: 'http://localhost:8080'
 solr_server: 'http://localhost:8080/solr'
 oai_server: 'http://localhost:8080/oai'
 rest_server: 
-    url: 'http://localhost:8080/rest'
+    url: 'https://dspace.org/rest'
     username: 'admin@example.org'
     password: 'password'
 statistics_db:
