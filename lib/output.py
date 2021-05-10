@@ -1,8 +1,10 @@
 import os
 import csv
+import logging
 import shutil
 import xlsxwriter
-import logging
+
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from lib.util import Utilities
 
@@ -111,4 +113,26 @@ class Output(object):
         workbook.close()
 
         self.logger.info("Saved report to Excel file %s.", output_file_path)
+        return output_file_path
+
+    def save_report_zip_archive(self, output_file_path=None, excel_report_file=None):
+        # Sanity checks
+        if output_file_path is None:
+            self.logger.error("Output file path is required.")
+            return False
+        if excel_report_file is None:
+            self.logger.error("Excel report file is required.")
+            return False
+        if not self.utilities.ensure_directory_exists(output_file_path):
+            self.logger.error("Output directory doesn't exist and can't be created.")
+            return False
+
+        # Store Excel report file in the root of the archive
+        archive_name = os.path.basename(excel_report_file)
+
+        self.logger.debug("Creating ZIP archive: %s", output_file_path)
+        with ZipFile(file=output_file_path, mode='w', compression=ZIP_DEFLATED) as report_zip:
+            report_zip.write(filename=excel_report_file, arcname=archive_name)
+
+        self.logger.info("Excel report file saved to ZIP archive: %s", output_file_path)
         return output_file_path

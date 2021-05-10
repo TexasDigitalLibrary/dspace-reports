@@ -1,10 +1,11 @@
-from database_manager import DatabaseManager
+from csv import excel
 import logging
 import sys
 
 from optparse import OptionParser
 from datetime import datetime
 
+from database_manager import DatabaseManager
 from lib.database import Database
 from lib.emailer import Emailer
 from lib.output import Output
@@ -78,12 +79,23 @@ class RunReports():
         self.logger.info("Creating Excel file with CSV report files.")
         excel_report_file = self.create_excel_report(csv_report_files)
 
-        # Email Excel file to email address list in the configuration
-        self.logger.info("Emailing Excel file to admin addresses in the configuration.")
-        if self.send_email and self.emailer and excel_report_file:
-            self.logger.info("Emailing report to address list in configuration.")
-            self.emailer.email_report_admins(report_file_path=excel_report_file)
-        
+        if self.config['create_zip_archive']:
+            # Create ZIP archive with Excel report file
+            self.logger.info("Creating ZIP archive with Excel report file.")
+            zip_report_archive = self.create_zip_archive(excel_report_file)
+
+            # Email ZIP archive with Excel file to email address list in the configuration
+            self.logger.info("Emailing Excel file to admin addresses in the configuration.")
+            if self.send_email and self.emailer and zip_report_archive:
+                self.logger.info("Emailing report to address list in configuration.")
+                self.emailer.email_report_admins(report_file_path=zip_report_archive)
+        else:
+            # Email Excel file to email address list in the configuration
+            self.logger.info("Emailing Excel file to admin addresses in the configuration.")
+            if self.send_email and self.emailer and excel_report_file:
+                self.logger.info("Emailing report to address list in configuration.")
+                self.emailer.email_report_admins(report_file_path=excel_report_file)
+
         self.logger.info("Finished running all reports.")
 
     def create_csv_report(self, report=None):
@@ -128,6 +140,21 @@ class RunReports():
             return excel_report_file
         else:
             self.logger.error("There was an error saving the Excel file.")
+            return False
+
+    def create_zip_archive(self, excel_report_file=None):
+        if excel_report_file is None:
+            self.logger.warn("No Excel file to create ZIP archive.")
+            return False
+
+        # Create ZIP archvie with the Excel file
+        output_file_path = self.output_dir + datetime.now().strftime('dspace-reports_%Y-%m-%d_%H-%M-%S.zip')
+        zip_report_archive = self.output.save_report_zip_archive(output_file_path=output_file_path, excel_report_file=excel_report_file)
+        if zip_report_archive:
+            self.logger.info('Finished saving ZIP archive to {zip_report_archive}.'.format(zip_report_archive=zip_report_archive))
+            return zip_report_archive
+        else:
+            self.logger.error("There was an error saving the ZIP archive.")
             return False
 
     def map_column_names(self, report_name=None, column_names=None):
