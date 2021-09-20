@@ -63,7 +63,7 @@ class Indexer(object):
             self.logger.debug("Current date: %s ", today)
             
             current_month = datetime.today().month
-            if current_month < 9:
+            if current_month <= 9:
                 fiscal_year = datetime.today().year - 1
             else:
                 fiscal_year = datetime.today().year
