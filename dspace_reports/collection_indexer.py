@@ -94,17 +94,16 @@ class CollectionIndexer(Indexer):
 
         # Get date range for Solr query if time period is specified
         date_range = []
-        if time_period != 'all':
-            self.logger.debug("Creating date range for time period: %s" %(time_period))
-            date_range = self.get_date_range(time_period)
-            if len(date_range) == 2:
-                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
-                if date_range[0] is not None and date_range[1] is not None:
-                    date_start = date_range[0]
-                    date_end = date_range[1]
-                    solr_query_params["fq"] = f"dc.date.accessioned_dt:[{date_start} TO {date_end}]"
-            else:
-                self.logger.error("Error creating date range.")
+        self.logger.debug("Creating date range for time period: %s" %(time_period))
+        date_range = self.get_date_range(time_period)
+        if len(date_range) == 2:
+            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            if date_range[0] is not None and date_range[1] is not None:
+                date_start = date_range[0]
+                date_end = date_range[1]
+                solr_query_params["fq"] = f"dc.date.accessioned_dt:[{date_start} TO {date_end}]"
+        else:
+            self.logger.error("Error creating date range.")
 
         # Add community UUID to query parameter
         solr_query_params['q'] = solr_query_params['q'] + " AND location.coll:" + collection_id
@@ -164,16 +163,15 @@ class CollectionIndexer(Indexer):
 
         # Get date range for Solr query if time period is specified
         date_range = []
-        if time_period != 'all':
-            date_range = self.get_date_range(time_period)
-            if len(date_range) == 2:
-                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
-                if date_range[0] is not None and date_range[1] is not None:
-                    date_start = date_range[0]
-                    date_end = date_range[1]
-                    solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
-            else:
-                self.logger.error("Error creating date range.")
+        date_range = self.get_date_range(time_period)
+        if len(date_range) == 2:
+            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            if date_range[0] is not None and date_range[1] is not None:
+                date_start = date_range[0]
+                date_end = date_range[1]
+                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+        else:
+            self.logger.error("Error creating date range.")
         
         # Make call to Solr for views statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
@@ -274,16 +272,15 @@ class CollectionIndexer(Indexer):
 
         # Get date range for Solr query if time period is specified
         date_range = []
-        if time_period != 'all':
-            date_range = self.get_date_range(time_period)
-            if len(date_range) == 2:
-                self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
-                if date_range[0] is not None and date_range[1] is not None:
-                    date_start = date_range[0]
-                    date_end = date_range[1]
-                    solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
-            else:
-                self.logger.error("Error creating date range.")
+        date_range = self.get_date_range(time_period)
+        if len(date_range) == 2:
+            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            if date_range[0] is not None and date_range[1] is not None:
+                date_start = date_range[0]
+                date_end = date_range[1]
+                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+        else:
+            self.logger.error("Error creating date range.")
 
         # Make call to Solr for views statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)

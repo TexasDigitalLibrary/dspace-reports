@@ -72,6 +72,13 @@ class Indexer(object):
             self.logger.debug("First day of academic year: %s ", first_day_of_academic_year)
 
             date_range = [first_day_of_academic_year, today]
+        elif time_period == 'all':
+            self.logger.info("Getting stats for all time.")
+            dt = date.today()
+            today = datetime.combine(dt, datetime.max.time()).isoformat() + 'Z'
+            self.logger.debug("Current date: %s ", today)
+
+            date_range = ['*', today]
 
         self.logger.debug("Date range has %s dates." %(str(len(date_range))))
         return date_range
