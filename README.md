@@ -43,6 +43,7 @@ statistics_db:
     username: 'dspace_statistics'
     password: 'dspace_statistics'
 work_dir: '/tmp'
+create_zip_archive: false
 log_path: 'logs'
 log_file: 'statistics-reports.log'
 log_level: 'INFO'
