@@ -4,7 +4,7 @@ A python3-based tool to generate and email statistical reports for [DSpace](http
 
 ## Requirements
 
-- Python 3.6+
+- Python 3.9+
 - PostgreSQL 9.6+
 - DSpace 6.x repository **
 
@@ -65,6 +65,14 @@ Configure application.yml according to your particular environment. The admin_em
 **NOTE: All of the following commands assume that the user is in the virtual environment.**
 
 ### Database
+
+First, create a role and database in PostgreSQL.
+
+```bash
+create role dspace_statistics with login password 'dspace_statistics';
+
+createdb --username=postgres --owner=dspace_statistics --encoding=UNICODE dspace_statistics;
+```
 
 There are several ways to generate statistical reports with this tool. They all begin with the database manager script that allows the user to create, drop and recreate the database tables to store metadata and statistics.
 
