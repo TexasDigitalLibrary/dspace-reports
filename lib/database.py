@@ -14,8 +14,9 @@ class Database(object):
             self._connection = psycopg2.connect(
                 self._connection_uri, cursor_factory=psycopg2.extras.DictCursor
             )
-        except psycopg2.OperationalError:
+        except psycopg2.OperationalError as err:
             self.logger.error("Cannot connect to database. Please check connection information and try again.")
+            self.logger.error(f"Error: {err=}, {type(err)=}")
 
         return self._connection
 
@@ -27,8 +28,9 @@ class Database(object):
         try:
             self.connection = psycopg2.connect(self._connection_uri)
             return True
-        except Exception:
+        except psycopg2.OperationalError as err:
             self.logger.error("Cannot connect to database. Please check connection information and try again.")
+            self.logger.error(f"Error: {err=}, {type(err)=}")
             return False
 
     def close_connection(self):
