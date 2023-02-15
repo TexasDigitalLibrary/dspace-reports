@@ -1,6 +1,8 @@
 import math
 import sys
 
+from time import sleep
+
 from lib.oai import DSpaceOai
 from lib.database import Database
 from dspace_reports.indexer import Indexer
@@ -18,6 +20,9 @@ class ItemIndexer(Indexer):
 
         # Set time periods to only month and year as all can cause Solr to crash
         self.time_periods = ['month', 'year', 'all']
+
+        # Set crawl delay from config
+        self.delay = config['delay']
 
     def index(self):
         # Get list of identifiers from OAI-PMH feed
@@ -190,6 +195,9 @@ class ItemIndexer(Indexer):
                     # Commit changes to database
                     db.commit()
 
+                    if self.delay:
+                        sleep(self.delay)
+
                     results_current_page += 1
 
     def index_item_downloads(self, time_period='all'):
@@ -297,5 +305,8 @@ class ItemIndexer(Indexer):
             
                     # Commit changes to database
                     db.commit()
+
+                    if self.delay:
+                        sleep(self.delay)
 
                     results_current_page += 1
