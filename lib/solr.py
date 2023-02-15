@@ -59,7 +59,8 @@ class DSpaceSolr(object):
 
         # URL for Solr status to check active cores
         solr_query_params = {"action": "STATUS", "wt": "json"}
-        solr_url = self.solr_server + "/admin/cores"
+        solr_url = self.solr_server + "admin/cores"
+        self.logger.debug("Solr cores URL: %s", solr_url)
         response = requests.get(solr_url, params=solr_query_params)
 
         if response.status_code == requests.codes.ok:
