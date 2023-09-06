@@ -1,6 +1,6 @@
 import re
-import requests
 import logging
+import requests
 from time import sleep
 from xml.dom import pulldom
 
