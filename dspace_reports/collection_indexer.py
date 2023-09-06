@@ -86,7 +86,7 @@ class CollectionIndexer(Indexer):
         
         # Default Solr params
         solr_query_params = {
-            "q": "search.resourcetype:2",
+            "q": "search.resourcetype:Item",
             "start": "0",
             "rows": "0",
             "wt": "json"

@@ -45,7 +45,7 @@ class RepositoryIndexer(Indexer):
         
         # Default Solr params
         solr_query_params = {
-            "q": "search.resourcetype:2",
+            "q": "search.resourcetype:Item",
             "start": "0",
             "rows": "0",
             "wt": "json"
@@ -104,7 +104,7 @@ class RepositoryIndexer(Indexer):
         # Default Solr params
         solr_query_params = {
             "q": "type:2",
-            "fq": "isBot:false AND statistics_type:view",
+            "fq": "-isBot:true AND statistics_type:view",
             "shards": shards,
             "rows": 0,
             "wt": "json"
@@ -165,7 +165,7 @@ class RepositoryIndexer(Indexer):
         # Default Solr params
         solr_query_params = {
             "q": "type:0",
-            "fq": "isBot:false AND statistics_type:view AND bundleName:ORIGINAL",
+            "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
             "shards": shards,
             "rows": 0,
             "wt": "json"
