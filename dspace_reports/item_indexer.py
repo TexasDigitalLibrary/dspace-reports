@@ -1,3 +1,5 @@
+"""Class for indexing items"""
+
 import math
 import sys
 
@@ -9,13 +11,16 @@ from dspace_reports.indexer import Indexer
 
 
 class ItemIndexer(Indexer):
+    """Class for indexing items"""
+
     def __init__(self, config, logger):
         super().__init__(config, logger)
 
         # Create OAI-PMH server object
         self.oai = DSpaceOai(oai_server=config['oai_server'])
         if self.oai is None:
-            self.logger.error("Unable to create Indexer due to earlier failures creating a connection to OAI-PMH feed.")
+            self.logger.error("Unable to create Indexer due to earlier failures creating a " +
+                              "connection to OAI-PMH feed.")
             sys.exit(1)
 
         # Set time periods to only month and year as all can cause Solr to crash
@@ -28,7 +33,7 @@ class ItemIndexer(Indexer):
         # Get list of identifiers from OAI-PMH feed
         records = self.oai.get_records()
         total_records = len(records)
-        self.logger.info("Found %s records in OAI-PMH feed." %(str(total_records)))
+        self.logger.info("Found %s records in OAI-PMH feed.", str(total_records))
 
         # Keep a count of records that cannot be found by their metadata
         count_records = 0
@@ -39,10 +44,12 @@ class ItemIndexer(Indexer):
             with db.cursor() as cursor:
                 for record in records:
                     count_records = count_records + 1
-                    self.logger.info("(%s/%s) - Calling REST API for record: %s" %(str(count_records), str(total_records), record))
+                    self.logger.info("(%s/%s) - Calling REST API for record: %s",
+                                     str(count_records), str(total_records), record)
 
                     metadata_entry = '{"key":"dc.identifier.uri", "value":"%s"}' %(record)
-                    items = self.rest.find_items_by_metadata_field(metadata_entry=metadata_entry, expand=['parentCollection'])
+                    items = self.rest.find_items_by_metadata_field(metadata_entry=metadata_entry,
+                                                                   expand=['parentCollection'])
                     if len(items) == 1:
                         item = items[0]
                         item_id = item['uuid']
@@ -55,14 +62,16 @@ class ItemIndexer(Indexer):
                             item_collection_name = item_collection['name']
 
                         if len(item_collection_name) > 255:
-                            self.logger.debug("Collection name is longer than 255 characters. It will be shortened to that length.")
+                            self.logger.debug("Collection name is longer than 255 characters. " +
+                                              "It will be shortened to that length.")
                             item_collection_name = item_collection_name[0:251] + "..."
-                        
-                            self.logger.info("item collection: %s " %(item_collection_name))
+
+                            self.logger.info("Item collection: %s ", item_collection_name)
 
                         # If name is null then use "Untitled"
                         if item_name is not None:
-                            # If item name is longer than 255 characters then shorten it to fit in database field
+                            # If item name is longer than 255 characters then shorten it
+                            # to fit in database field
                             if len(item_name) > 255:
                                 item_name = item_name[0:251] + "..."
                         else:
@@ -71,16 +80,19 @@ class ItemIndexer(Indexer):
                         # Create handle URL for item
                         item_url = self.base_url + item['handle']
 
-                        self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_collection_name, item_id, item_name, item_url)))
-                        cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_collection_name, item_id, item_name, item_url))
+                        self.logger.debug(cursor.mogrify(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ({item_collection_name}, {item_id}, {item_name}, {item_url}) ON CONFLICT DO NOTHING"))
+                        cursor.execute(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ({item_collection_name}, {item_id}, {item_name}, {item_url}) ON CONFLICT DO NOTHING")
                         db.commit()
                     else:
                         count_missing_records += 1
-                        self.logger.error("Unable to find item in REST API: %s" %(record))
-        
-        self.logger.info("Total records in OAI-PMH feed: %s" %(str(len(records))))
+                        self.logger.error("Unable to find item in REST API: %s", record)
+
+        self.logger.info("Total records in OAI-PMH feed: %s", str(len(records)))
+
         if count_missing_records > 0 and total_records > 0:
-            self.logger.info("Total records missing in OAI-PMH feed: %s (%.0f%%)" %(str(count_missing_records), (100 * count_missing_records/total_records)))
+            self.logger.info("Total records missing in OAI-PMH feed: %s (%.0f%%)",
+                             str(count_missing_records),
+                             (100 * count_missing_records/total_records))
 
         for time_period in self.time_periods:
             self.logger.info("Indexing Solr views for time period: %s ", time_period)
@@ -90,11 +102,13 @@ class ItemIndexer(Indexer):
             self.index_item_downloads(time_period=time_period)
 
     def index_item_views(self, time_period='all'):
+        """Index the item views"""
+
         # Create base Solr url
         solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
-        shards = self.solr.get_statistics_shards(time_period)
+        shards = self.solr.get_statistics_shards()
 
         # Solr params
         solr_query_params = {
@@ -118,7 +132,7 @@ class ItemIndexer(Indexer):
         date_range = []
         date_range = self.get_date_range(time_period)
         if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
@@ -129,10 +143,10 @@ class ItemIndexer(Indexer):
         # Make call to Solr for total views statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
         self.logger.info("Solr total item views query: %s", response.url)
-        
+
         try:
             # get total number of distinct facets (countDistinct)
-            results_totalNumFacets = response.json()["stats"]["stats_fields"]["id"][
+            results_total_num_facets = response.json()["stats"]["stats_fields"]["id"][
                 "countDistinct"
             ]
         except TypeError:
@@ -141,7 +155,7 @@ class ItemIndexer(Indexer):
 
         # divide results into "pages" and round up to next integer
         results_per_page = 100
-        results_num_pages = math.ceil(results_totalNumFacets / results_per_page)
+        results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
 
         with Database(self.config['statistics_db']) as db:
@@ -169,7 +183,8 @@ class ItemIndexer(Indexer):
                     }
 
                     if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        self.logger.info("Searching date range: %s - %s",
+                                         date_range[0], date_range[1])
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
@@ -181,17 +196,17 @@ class ItemIndexer(Indexer):
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
                     # iterate over the facetField dict and get the ids and views
-                    for id, item_views in views["id"].items():
+                    for item_id, item_views in views["id"].items():
                         if time_period == 'month':
-                            self.logger.debug(cursor.mogrify("UPDATE item_stats SET views_last_month = %s WHERE item_id = %s", (item_views, id)))
-                            cursor.execute("UPDATE item_stats SET views_last_month = %s WHERE item_id = %s", (item_views, id))
+                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_id}'"))
+                            cursor.execute(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_id}'")
                         elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify("UPDATE item_stats SET views_academic_year = %s WHERE item_id = %s", (item_views, id)))
-                            cursor.execute("UPDATE item_stats SET views_academic_year = %s WHERE item_id = %s", (item_views, id))
+                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_id}'"))
+                            cursor.execute(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_id}'")
                         else:
-                            self.logger.debug(cursor.mogrify("UPDATE item_stats SET views_total = %s WHERE item_id = %s", (item_views, id)))
-                            cursor.execute("UPDATE item_stats SET views_total = %s WHERE item_id = %s", (item_views, id))
-            
+                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_id}'"))
+                            cursor.execute(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_id}'")
+
                     # Commit changes to database
                     db.commit()
 
@@ -201,11 +216,13 @@ class ItemIndexer(Indexer):
                     results_current_page += 1
 
     def index_item_downloads(self, time_period='all'):
+        """Index the item downloads"""
+
         # Create base Solr url
         solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
-        shards = self.solr.get_statistics_shards(time_period)
+        shards = self.solr.get_statistics_shards()
 
         # Solr params
         solr_query_params = {
@@ -229,7 +246,7 @@ class ItemIndexer(Indexer):
         date_range = []
         date_range = self.get_date_range(time_period)
         if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
@@ -243,7 +260,7 @@ class ItemIndexer(Indexer):
 
         try:
             # get total number of distinct facets (countDistinct)
-            results_totalNumFacets = response.json()["stats"]["stats_fields"]["owningItem"][
+            results_total_num_facets = response.json()["stats"]["stats_fields"]["owningItem"][
                 "countDistinct"
             ]
         except TypeError:
@@ -251,7 +268,7 @@ class ItemIndexer(Indexer):
             return
 
         results_per_page = 100
-        results_num_pages = math.ceil(results_totalNumFacets / results_per_page)
+        results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
 
         with Database(self.config['statistics_db']) as db:
@@ -280,7 +297,7 @@ class ItemIndexer(Indexer):
                     }
 
                     if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
@@ -288,20 +305,20 @@ class ItemIndexer(Indexer):
 
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr item downloads query: %s", response.url)
- 
+
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
                     # iterate over the facetField dict and get the ids and views
-                    for id, item_downloads in downloads["owningItem"].items():
+                    for item_id, item_downloads in downloads["owningItem"].items():
                         if time_period == 'month':
-                            self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_last_month = %s WHERE item_id = %s", (item_downloads, id)))
-                            cursor.execute("UPDATE item_stats SET downloads_last_month = %s WHERE item_id = %s", (item_downloads, id))
+                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_id}'"))
+                            cursor.execute(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_id}'")
                         elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_academic_year = %s WHERE item_id = %s", (item_downloads, id)))
-                            cursor.execute("UPDATE item_stats SET downloads_academic_year = %s WHERE item_id = %s", (item_downloads, id))
+                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_id}'"))
+                            cursor.execute(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_id}'")
                         else:
-                            self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_total = %s WHERE item_id = %s", (item_downloads, id)))
-                            cursor.execute("UPDATE item_stats SET downloads_total = %s WHERE item_id = %s", (item_downloads, id))
+                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_id}'"))
+                            cursor.execute(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_id}'")
             
                     # Commit changes to database
                     db.commit()

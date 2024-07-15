@@ -1,9 +1,13 @@
+"""Class for interacting with a DSpace 7+ Solr instance"""
+
 import logging
-import requests
 import re
+import requests
 
 
-class DSpaceSolr(object):
+class DSpaceSolr():
+    """Class for interacting with a DSpace 7+ Solr instance"""
+
     def __init__(self, solr_server=None):
         # Ensure solr_server has trailing slash
         if solr_server[len(solr_server)-1] != '/':
@@ -11,23 +15,37 @@ class DSpaceSolr(object):
         else:
             self.solr_server = solr_server
 
+        # Timeout for requests to Solr
+        self.timeout = 5
+
+        # Create session
+        self.session = requests.Session()
+        self.request_headers = {'Content-type': 'application/json'}
+
         self.logger = logging.getLogger('dspace-reports')
         self.logger.debug("Connecting to DSpace REST API:  %s.", self.solr_server)
         self.test_connection()
 
     def test_connection(self):
-        url = self.solr_server
-        self.logger.debug("Testing Solr server connection: %s.", url)
-        response = requests.get(url)
+        """Test Solr connection"""
 
-        if response.status_code == requests.codes.ok:
-            self.logger.debug("Solr server connection successful")
+        self.logger.debug("Testing Solr server connection: %s.", self.solr_server)
+        response = self.session.get(self.solr_server, headers=self.request_headers,
+                                    timeout=self.timeout)
+
+        if response.status_code == 200:
+            self.logger.debug("Solr server connection successful.")
             return True
-        else:
-            self.logger.warning("Solr server connection NOT successful")
-            return None
 
-    def construct_url(self, command, params={}):
+        self.logger.warning("Solr server connection failed.")
+        return None
+
+    def construct_url(self, command, params=None):
+        """Create Solr URL"""
+
+        if params is None:
+            params = {}
+
         parameters = ''
         first = True
         for key, value in params.items():
@@ -40,18 +58,27 @@ class DSpaceSolr(object):
         new_url = self.solr_server + command + parameters
         return new_url
 
-    def call(self, type='GET', url=None, params={}):
-        if url is None:
-            return
+    def call(self, call_type='GET', url=None, params=None):
+        """Make call to Solr server"""
 
-        if type == 'POST':
-            response = requests.put(url, params=params)
+        if url is None:
+            return None
+
+        if params is None:
+            params = {}
+
+        if call_type == 'POST':
+            response = self.session.post(url, params=params, headers=self.request_headers,
+                                        timeout=self.timeout)
         else:
-            response = requests.get(url, params=params)
+            response = self.session.get(url, params=params,headers=self.request_headers,
+                                        timeout=self.timeout)
 
         return response
 
-    def get_statistics_shards(self, time_period):
+    def get_statistics_shards(self):
+        """Get Solr shards with statistics"""
+
         # Vars
         shards = str()
         shards = f"{self.solr_server}statistics"
@@ -61,10 +88,11 @@ class DSpaceSolr(object):
         solr_query_params = {"action": "STATUS", "wt": "json"}
         solr_url = self.solr_server + "admin/cores"
         self.logger.debug("Solr cores URL: %s", solr_url)
-        response = requests.get(solr_url, params=solr_query_params)
+        shards_response = self.session.get(solr_url, params=solr_query_params,
+                                           headers=self.request_headers, timeout=self.timeout)
 
-        if response.status_code == requests.codes.ok:
-            data = response.json()
+        if shards_response.status_code == 200:
+            data = shards_response.json()
 
             # Iterate over active cores from Solr's STATUS response
             for core in data["status"]:
@@ -86,4 +114,6 @@ class DSpaceSolr(object):
         return shards
 
     def get_solr_server(self):
+        """Return reference to Solr server"""
+
         return self.solr_server

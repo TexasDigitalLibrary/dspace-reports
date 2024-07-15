@@ -1,13 +1,15 @@
-import re
+"""Class for interacting with a DSpace 7+ OAI-PMH endpoint"""
+
 import logging
-import requests
+import re
 from time import sleep
-from xml.dom import pulldom
-
 import xml.etree.ElementTree as ET
+import requests
 
 
-class DSpaceOai(object):
+class DSpaceOai():
+    """Class for interacting with a DSpace 7+ OAI-PMH endpoint"""
+
     ns = {
         'oai': 'http://www.openarchives.org/OAI/2.0/',
         'dc': 'http://purl.org/dc/elements/1.1/'
@@ -23,17 +25,20 @@ class DSpaceOai(object):
         # Add 'request' to path
         self.oai_server = self.oai_server + 'request'
 
+        self.timeout = 5
         self.limit = 100
-        self.sleepTime = 1
+        self.sleep_time = 1
         self.headers = {'User-Agent': 'OAIHarvester/2.0', 'Accept': 'text/html',
                'Accept-Encoding': 'compress, deflate'}
 
         self.logger = logging.getLogger('dspace-reports')
-        
+
         # Test connection to OAI-PMH feed
         self.test_connection()
 
     def test_connection(self):
+        """Test OAI-PMH connection"""
+
         identify_url = self.construct_url(verb='Identify')
         self.logger.info("Testing OAI-PMH feed connection: %s.", identify_url)
         response = self.call(url = identify_url)
@@ -41,11 +46,16 @@ class DSpaceOai(object):
         if response.status_code == 200:
             self.logger.info("OAI_PMH feed connection successful.")
             return True
-        else:
-            self.logger.error("OAI-PMH feed connection NOT successful.")
-            return False
 
-    def construct_url(self, verb, params={}):
+        self.logger.error("OAI-PMH feed connection NOT successful.")
+        return False
+
+    def construct_url(self, verb, params=None):
+        """Create URL"""
+
+        if params is None:
+            params = {}
+
         parameters = ''
         for key, value in params.items():
             parameters += '&' + key + '=' + str(value)
@@ -53,18 +63,27 @@ class DSpaceOai(object):
         new_url = self.oai_server + '?verb=' + verb + parameters
         return new_url
 
-    def call(self, url=None, params={}):
-        if url is None:
-            return
+    def call(self, url=None, params=None):
+        """Make call to endpoint"""
 
-        response = requests.get(url, params=params)
+        if url is None:
+            return None
+
+        if params is None:
+            params = {}
+
+        response = requests.get(url, params=params, timeout=self.timeout)
         return response
 
     def pause(self, wait_time):
-        self.logger.info("Pausing harvest process for %s second(s)." %(str(wait_time)))
+        """Pause before next call"""
+
+        self.logger.info("Pausing harvest process for %s second(s).", str(wait_time))
         sleep(wait_time)
 
     def get_records(self):
+        """Get all records"""
+
         offset = 0
         all_records = []
         params = {
@@ -72,13 +91,14 @@ class DSpaceOai(object):
         }
 
         while True:
-            self.logger.debug("Retrieving records %s through %s from the OAI-PMH feed." %(str(offset), str(offset + self.limit)))
+            self.logger.debug("Retrieving records %s through %s from the OAI-PMH feed.",
+                              str(offset), str(offset + self.limit))
             records_url = self.construct_url(verb = 'ListRecords', params = params)
-            self.logger.debug("Records OAI-PMH call: %s" %(records_url))
+            self.logger.debug("Records OAI-PMH call: %s", records_url)
 
             records_response = self.call(url = records_url)
             records_root = ET.fromstring(records_response.text)
-            
+
             list_records = records_root.find('.//oai:ListRecords', self.ns)
             if list_records:
                 records = list_records.findall('.//oai:record', self.ns)
@@ -88,20 +108,23 @@ class DSpaceOai(object):
                         identifier_nodes = metadata.findall('.//dc:identifier', self.ns)
                         for identifier_node in identifier_nodes:
                             if identifier_node is not None and identifier_node.text is not None:
-                                self.logger.info("Looking at record identifier: %s : %s" %(identifier_node.tag, identifier_node.text))
+                                self.logger.info("Looking at record identifier: %s : %s",
+                                                 identifier_node.tag, identifier_node.text)
                                 handle = re.search('^https?://hdl.handle.net', identifier_node.text)
                                 if handle:
                                     all_records.append(identifier_node.text)
                                 else:
-                                    self.logger.debug("Identifier is not a handle URL: %s" %(identifier_node.text))
+                                    self.logger.debug("Identifier is not a handle URL: %s",
+                                                      identifier_node.text)
 
             # Check for resumptionToken
-            token_match = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', records_response.text)
+            token_match = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>',
+                                    records_response.text)
             if not token_match:
                 break
 
             token = token_match.group(1)
-            self.logger.debug("resumptionToken: %s" %(token))
+            self.logger.debug("resumptionToken: %s", token)
             params['resumptionToken'] = token
 
             # Remove metadataPrefix from params
@@ -110,8 +133,8 @@ class DSpaceOai(object):
 
             offset = offset + self.limit
 
-            if self.sleepTime:
-                self.pause(self.sleepTime)
+            if self.sleep_time:
+                self.pause(self.sleep_time)
 
-        self.logger.debug("Harvested %s records from OAI feed." %(str(len(all_records))))
+        self.logger.debug("Harvested %s records from OAI feed.", str(len(all_records)))
         return all_records

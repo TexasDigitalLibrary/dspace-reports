@@ -1,3 +1,5 @@
+"""Class for indexing communities"""
+
 import math
 
 from lib.database import Database
@@ -5,77 +7,81 @@ from dspace_reports.indexer import Indexer
 
 
 class CommunityIndexer(Indexer):
-    def index(self):
-        # Get site hierarchy
-        hierarchy = self.rest.get_hierarchy()
+    """Class for indexing communities"""
 
-        # Traverse hierarchy
-        self.logger.info(hierarchy)
+    def index(self):
+        """Index function"""
 
         self.logger.info("Loading DSpace communities...")
         self.index_communities()
 
     def index_communities(self):
+        """Index the communities in the repository"""
+
         # List of communities
         communities = []
 
-        # Get site hierarchy
-        hierarchy = self.rest.get_hierarchy()
+        # Get top level communities
+        top_communities = self.rest.get_top_level_communities()
 
-        if 'community' in hierarchy:
-            communities = hierarchy['community']
+        if 'community' in top_communities:
+            communities = top_communities['community']
             self.logger.info("Repository has %s top-level communities.", str(len(communities)))
 
             for community in communities:
-                self.logger.debug("Loading top-level community: %s (%s)" %(community['name'], community['id']))
+                self.logger.debug("Loading top-level community: %s (%s)", community['name'], community['id'])
                 self.load_communities_recursive(communities, community)
         else:
             self.logger.info("Repository has no communities.")
 
         for time_period in self.time_periods:
-            self.logger.info("Updating views statistics for communities during time period: %s" %(time_period))
+            self.logger.info("Updating views statistics for communities during time period: %s", time_period)
             self.index_community_views(time_period=time_period)
 
-            self.logger.info("Updating downloads statistics for communities during time period: %s" %(time_period))
+            self.logger.info("Updating downloads statistics for communities during time period: %s", time_period)
             self.index_community_downloads(time_period=time_period)
-                
+
     def load_communities_recursive(self, communities, community, parent_community_name=""):
+        """Load all communities recursively"""
+
         # Extract metadata
         community_id = community['id']
         community_name = community['name']
         community_handle = community['handle']
         community_url = self.base_url + community_handle
-        self.logger.info("Loading community: %s (%s)..." %(community_name, community_id))
+        self.logger.info("Loading community: %s (%s)...", community_name, community_id)
 
          # Insert the community into the database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                self.logger.debug(cursor.mogrify("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_id, community_name, community_url, parent_community_name)))
-                cursor.execute("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_id, community_name, community_url, parent_community_name))
+                self.logger.debug(cursor.mogrify(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ({community_id}, {community_name}, {community_url}, {parent_community_name})"))
+                cursor.execute(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ({community_id}, {community_name}, {community_url}, {parent_community_name})")
                 db.commit()
 
         # Index views and downloads for the current community
         for time_period in self.time_periods:
-            self.logger.info("Indexing items for community: %s (%s)" %(community_id, community_name))
+            self.logger.info("Indexing items for community: %s (%s)", community_id, community_name)
             self.index_community_items(community_id=community_id, time_period=time_period)
 
         # Load sub communities
         if 'community' in community:
             sub_communities = community['community']
             for sub_community in sub_communities:
-                self.logger.info("Loading subcommunity: %s (%s)" %(sub_community['name'], sub_community['id']))
+                self.logger.info("Loading subcommunity: %s (%s)", sub_community['name'], sub_community['id'])
                 self.load_communities_recursive(communities=communities, community=sub_community, parent_community_name=community_name)
         else:
             self.logger.info("There are no subcommunities in this community.")
-        
+
     def index_community_items(self, community_id=None, time_period=None):
+        """Index the community items"""
+
         if community_id is None or time_period is None:
-            return
+            return None
 
         # Create base Solr URL
         solr_url = self.solr_server + "/search/select"
-        self.logger.debug("tdl solr_url: %s" %(solr_url))
-        
+        self.logger.debug("Solr_URL: %s", solr_url)
+
         # Default Solr params
         solr_query_params = {
             "q": "search.resourcetype:Item",
@@ -86,10 +92,10 @@ class CommunityIndexer(Indexer):
 
         # Get date range for Solr query if time period is specified
         date_range = []
-        self.logger.debug("Creating date range for time period: %s" %(time_period))
+        self.logger.debug("Creating date range for time period: %s", time_period)
         date_range = self.get_date_range(time_period)
         if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
@@ -105,12 +111,12 @@ class CommunityIndexer(Indexer):
         # Make call to Solr for items statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
         self.logger.info("Calling Solr items in community: %s", response.url)
-        
-        results_totalItems = 0
+
+        results_total_items = 0
         try:
             # Get total number of items
-            results_totalItems = response.json()["response"]["numFound"]
-            self.logger.info("Solr - total items: %s", str(results_totalItems))
+            results_total_items = response.json()["response"]["numFound"]
+            self.logger.info("Solr - total items: %s", str(results_total_items))
         except TypeError:
             self.logger.info("No community items to index.")
             return
@@ -118,24 +124,26 @@ class CommunityIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET items_last_month = %i WHERE community_id = '%s'" %(results_totalItems, community_id)))
-                    cursor.execute("UPDATE community_stats SET items_last_month = %i WHERE community_id = '%s'" %(results_totalItems, community_id))
+                    self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET items_last_month = {results_total_items} WHERE community_id = '{community_id}'"))
+                    cursor.execute(f"UPDATE community_stats SET items_last_month = {results_total_items} WHERE community_id = '{community_id}'")
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET items_academic_year = %i WHERE community_id = '%s'" %(results_totalItems, community_id)))
-                    cursor.execute("UPDATE community_stats SET items_academic_year = %i WHERE community_id = '%s'" %(results_totalItems, community_id))
+                    self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET items_academic_year = {results_total_items} WHERE community_id = '{community_id}'"))
+                    cursor.execute(f"UPDATE community_stats SET items_academic_year = {results_total_items} WHERE community_id = '{community_id}'")
                 else:
-                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET items_total = %i WHERE community_id = '%s'" %(results_totalItems, community_id)))
-                    cursor.execute("UPDATE community_stats SET items_total = %i WHERE community_id = '%s'" %(results_totalItems, community_id))
+                    self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET items_total = {results_total_items} WHERE community_id = '{community_id}'"))
+                    cursor.execute(f"UPDATE community_stats SET items_total = {results_total_items} WHERE community_id = '{community_id}'")
 
                 # Commit changes
                 db.commit()
 
     def index_community_views(self, time_period=None):
+        """Index the community views"""
+
         # Create base Solr url
         solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
-        shards = self.solr.get_statistics_shards(time_period)
+        shards = self.solr.get_statistics_shards()
 
         # Default Solr params
         solr_query_params = {
@@ -156,11 +164,11 @@ class CommunityIndexer(Indexer):
         }
 
         # Get date range for Solr query if time period is specified
-        date_range = []        
-        self.logger.debug("Creating date range for time period: %s" %(time_period))
+        date_range = []
+        self.logger.debug("Creating date range for time period: %s", time_period)
         date_range = self.get_date_range(time_period)
         if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
@@ -173,10 +181,10 @@ class CommunityIndexer(Indexer):
         # Make call to Solr for views statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
         self.logger.info("Calling Solr total community views in communities: %s", response.url)
-        
+
         try:
             # get total number of distinct facets (countDistinct)
-            results_totalNumFacets = response.json()["stats"]["stats_fields"]["owningComm"][
+            results_total_num_facets = response.json()["stats"]["stats_fields"]["owningComm"][
                 "countDistinct"
             ]
         except TypeError:
@@ -185,9 +193,9 @@ class CommunityIndexer(Indexer):
 
         # divide results into "pages" and round up to next integer
         results_per_page = 100
-        results_num_pages = math.ceil(results_totalNumFacets / results_per_page)
+        results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
-        
+
         # Update database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
@@ -213,7 +221,7 @@ class CommunityIndexer(Indexer):
                     }
 
                     if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
@@ -225,28 +233,30 @@ class CommunityIndexer(Indexer):
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
                     # iterate over the facetField dict and get the ids and views
-                    for id, community_views in views["owningComm"].items():
+                    for community_id, community_views in views["owningComm"].items():
                         if len(id) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, id)))
-                                cursor.execute("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, id))
+                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_last_month = {community_views} WHERE community_id = '{community_id}'"))
+                                cursor.execute(f"UPDATE community_stats SET views_last_month = {community_views} WHERE community_id = '{community_id}'")
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, id)))
-                                cursor.execute("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, id))
+                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_academic_year = {community_views} WHERE community_id = '{community_id}'"))
+                                cursor.execute(f"UPDATE community_stats SET views_academic_year = {community_views} WHERE community_id = '{community_id}'")
                             else:
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, id)))
-                                cursor.execute("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, id))
+                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_total = {community_views} WHERE community_id = '{community_id}'"))
+                                cursor.execute(f"UPDATE community_stats SET views_total = {community_views} WHERE community_id = '{community_id}'")
                         else:
-                            self.logger.warn("owningComm value is not a UUID: %s", id)
+                            self.logger.warning("owningComm value is not a UUID: %s", id)
 
                     # Commit changes to database
                     db.commit()
 
                     results_current_page += 1
-        
+
     def index_community_downloads(self, time_period=None):
+        """Index the community downloads"""
+
         # Get Solr shards
-        shards = self.solr.get_statistics_shards(time_period)
+        shards = self.solr.get_statistics_shards()
 
         # Create base Solr url
         solr_url = self.solr_server + "/statistics/select"
@@ -273,29 +283,29 @@ class CommunityIndexer(Indexer):
         date_range = []
         date_range = self.get_date_range(time_period)
         if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+            self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
                 solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
         else:
             self.logger.error("Error creating date range.")
-    
+
         # Make call to Solr for downloads statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
         self.logger.info("Calling Solr total community downloads in community: %s", response.url)
 
         try:
             # get total number of distinct facets (countDistinct)
-            results_totalNumFacets = response.json()["stats"]["stats_fields"]["owningComm"][
+            results_total_num_facets = response.json()["stats"]["stats_fields"]["owningComm"][
                 "countDistinct"
             ]
         except TypeError:
             self.logger.info("No community downloads to index.")
             return
-        
+
         results_per_page = 100
-        results_num_pages = math.ceil(results_totalNumFacets / results_per_page)
+        results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
 
         # Update database
@@ -324,7 +334,7 @@ class CommunityIndexer(Indexer):
                     }
 
                     if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s" %(date_range[0], date_range[1]))
+                        self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
@@ -332,23 +342,23 @@ class CommunityIndexer(Indexer):
 
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr community downloads query: %s", response.url)
- 
+
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
                     # iterate over the facetField dict and get the ids and views
-                    for id, community_downloads in downloads["owningComm"].items():
+                    for community_id, community_downloads in downloads["owningComm"].items():
                         if len(id) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, id)))
-                                cursor.execute("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, id))
+                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_last_month = {community_downloads} WHERE community_id = '{community_id}'"))
+                                cursor.execute(f"UPDATE community_stats SET downloads_last_month = {community_downloads} WHERE community_id = '{community_id}'")
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, id)))
-                                cursor.execute("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, id))
+                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_academic_year = {community_downloads} WHERE community_id ='{community_id}'"))
+                                cursor.execute(f"UPDATE community_stats SET downloads_academic_year = {community_downloads} WHERE community_id = '{community_id}'")
                             else:
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, id)))
-                                cursor.execute("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, id))
+                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_total = {community_downloads} WHERE community_id = '{community_id}'"))
+                                cursor.execute(f"UPDATE community_stats SET downloads_total = {community_downloads} WHERE community_id = '{community_id}'")
                         else:
-                            self.logger.warn("owningComm value is not a UUID: %s", id)
+                            self.logger.warning("owningComm value is not a UUID: %s", id)
 
                     # Commit changes to database
                     db.commit()
