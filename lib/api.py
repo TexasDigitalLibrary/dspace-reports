@@ -143,8 +143,11 @@ class DSpaceRestApi():
         if response.status_code == 200:
             return response.json()
 
-        self.logger.error("Error while making rest call, (HTTP code: %s) %s",
-                          response.status_code, response.text)
+        # Log errors
+        if response.status_code >= 400 and response.status_code <= 500:
+            self.logger.error("Error while making rest call, (HTTP code: %s) %s",
+                                response.status_code, response.text)
+
         return None
 
     def get_site(self):
@@ -159,16 +162,57 @@ class DSpaceRestApi():
 
         return None
 
-
-    def get_communities(self):
+    def get_communities(self, sort=None):
         """Get all communities"""
 
+        params = {}
+        if sort is not None:
+            params['sort'] = sort
+
         communities = []
+        page = 0
+        params['page'] = page
+        size = 20
+        params['size'] = size
+
         communities_url = self.construct_url(command = 'core/communities')
-        communities_response = self.rest_call(url = communities_url)
-        if communities_response is not None and '_embedded' in communities_response:
-            if 'communities' in communities_response['_embedded']:
-                communities = communities_response['_embedded']['communities']
+        total_communities = 0
+        total_pages = 0
+
+        while True:
+            self.logger.info("Loading page %s of communities...", str(page))
+
+            communities_response = self.rest_call(url = communities_url, params = params)
+            if communities_response is not None and '_embedded' in communities_response:
+                # Get ccommunities from this page of results
+                if 'communities' in communities_response['_embedded']:
+                    self.logger.info(communities_response['_embedded']['communities'])
+                    for community_json in communities_response['_embedded']['communities']:
+                        communities.append(community_json)
+
+                # Check API response for amount of total communities and pages
+                if 'page' in communities_response:
+                    page_info = communities_response['page']
+                    if 'totalElements' in page_info:
+                        total_communities = page_info['totalElements']
+                    if 'totalPages' in page_info:
+                        total_pages = page_info['totalPages']
+
+                page += 1
+                if total_pages > 0 and page == total_pages:
+                    break
+
+                params['page'] = page
+            else:
+                break
+
+        # Sanity check to make sure all pages were retrieved
+        if len(communities) != total_communities:
+            self.logger.error("There was a problem retrieving communities from the API.")
+            self.logger.error("Communities retrieved: %s. Total communities reported by API: %s",
+                              str(len(communities)), str(total_communities))
+        else:
+            self.logger.info("Retrieved %s communities from the REST API.", str(len(communities)))
 
         return communities
 
@@ -197,6 +241,17 @@ class DSpaceRestApi():
             community = community_response[0]
 
         return community
+
+    def get_community_parent_community(self, community_uuid=None):
+        """Get parent community of a given community"""
+
+        if community_uuid is None:
+            return None
+
+        parent_community_url = self.construct_url(
+            command = f"core/communities/{community_uuid}/parentCommunity")
+
+        return self.rest_call(url = parent_community_url)
 
     def get_collections(self, sort=None):
         """Get all collections"""
@@ -253,7 +308,7 @@ class DSpaceRestApi():
         return collections
 
     def get_collection_parent_community(self, collection_uuid=None):
-        """Get Parent community of a given collection"""
+        """Get parent community of a given collection"""
 
         if collection_uuid is None:
             return None

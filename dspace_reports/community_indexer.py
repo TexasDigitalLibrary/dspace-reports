@@ -18,60 +18,48 @@ class CommunityIndexer(Indexer):
     def index_communities(self):
         """Index the communities in the repository"""
 
-        # List of communities
-        communities = []
+        # Get a list of all communities from the REST API
+        communities = self.rest.get_communities()
+        for community in communities:
+            community_uuid = community['uuid']
+            community_name = community['name']
+            self.logger.info("Loading community: %s (%s)...", community_name, community_uuid)
 
-        # Get top level communities
-        top_communities = self.rest.get_top_level_communities()
+            # Get community metadata, including parent community name
+            community_handle = community['handle']
+            community_url = self.base_url + community_handle
 
-        if 'community' in top_communities:
-            communities = top_communities['community']
-            self.logger.info("Repository has %s top-level communities.", str(len(communities)))
+            parent_community_name = ""
+            parent_community = self.rest.get_community_parent_community(
+                community_uuid=community_uuid)
+            if parent_community is not None and 'name' in parent_community:
+                parent_community_name = parent_community['name']
 
-            for community in communities:
-                self.logger.debug("Loading top-level community: %s (%s)", community['name'], community['id'])
-                self.load_communities_recursive(communities, community)
-        else:
-            self.logger.info("Repository has no communities.")
+            if len(community_name) > 255:
+                self.logger.debug("Community name is longer than 255 characters. It will be shortened to that length.")
+                community_name = community_name[0:251] + "..."
 
+            # Insert the community into the database
+            with Database(self.config['statistics_db']) as db:
+                with db.cursor() as cursor:
+                    self.logger.debug(cursor.mogrify("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name)))
+                    cursor.execute("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name))
+                    db.commit()
+
+            for time_period in self.time_periods:
+                self.logger.info("Indexing items for community: %s (%s)", community_name,
+                                 community_uuid)
+                self.index_community_items(community_uuid=community_uuid, time_period=time_period)
+
+        # Index all views and downloads of communities
         for time_period in self.time_periods:
-            self.logger.info("Updating views statistics for communities during time period: %s", time_period)
+            self.logger.info("Updating views statistics for communities during time period: %s",
+                             time_period)
             self.index_community_views(time_period=time_period)
 
-            self.logger.info("Updating downloads statistics for communities during time period: %s", time_period)
+            self.logger.info("Updating downloads statistics for communities during time period: %s",
+                             time_period)
             self.index_community_downloads(time_period=time_period)
-
-    def load_communities_recursive(self, communities, community, parent_community_name=""):
-        """Load all communities recursively"""
-
-        # Extract metadata
-        community_uuid = community['uuid']
-        community_name = community['name']
-        community_handle = community['handle']
-        community_url = self.base_url + community_handle
-        self.logger.info("Loading community: %s (%s)...", community_name, community_uuid)
-
-         # Insert the community into the database
-        with Database(self.config['statistics_db']) as db:
-            with db.cursor() as cursor:
-                self.logger.debug(cursor.mogrify("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name)))
-                cursor.execute("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name))
-                db.commit()
-
-        # Index views and downloads for the current community
-        for time_period in self.time_periods:
-            self.logger.info("Indexing items for community: %s (%s)", community_name,
-                                community_uuid)
-            self.index_community_items(community_uuid=community_uuid, time_period=time_period)
-
-        # Load sub communities
-        if 'community' in community:
-            sub_communities = community['community']
-            for sub_community in sub_communities:
-                self.logger.info("Loading subcommunity: %s (%s)", sub_community['name'], sub_community['id'])
-                self.load_communities_recursive(communities=communities, community=sub_community, parent_community_name=community_name)
-        else:
-            self.logger.info("There are no subcommunities in this community.")
 
     def index_community_items(self, community_uuid=None, time_period=None):
         """Index the community items"""
@@ -120,7 +108,7 @@ class CommunityIndexer(Indexer):
             self.logger.info("Solr - total items: %s", str(results_total_items))
         except TypeError:
             self.logger.info("No community items to index.")
-            return
+            return None
 
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:

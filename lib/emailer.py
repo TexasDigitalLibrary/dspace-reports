@@ -11,7 +11,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 
 
-class Emailer(object):
+class Emailer():
     """Class for sending emails"""
 
     def __init__(self, config=None):
@@ -31,13 +31,13 @@ class Emailer(object):
 
         # Send email(s) to contact(s)
         for admin_email in self.config['admin_emails']:
-            self.logger.info('Sending report to %s.', admin_email=admin_email)
-            self.__email_report_internal(report_file_path=report_file_path, to_email=admin_email, 
+            self.logger.info('Sending report to %s.', admin_email)
+            self.__email_report_internal(report_file_path=report_file_path, to_email=admin_email,
                                          from_email=from_email, subject=subject)
 
         return None
 
-    def __email_report_internal(self, report_file_path=None, to_email=None, from_email=None, 
+    def __email_report_internal(self, report_file_path=None, to_email=None, from_email=None,
                                 subject=None):
         if report_file_path is None:
             self.logger.error("A report file path of either a ZIP archive or Excel file " +
@@ -63,7 +63,7 @@ class Emailer(object):
 
         # Attach report file(s)
         path, report_file_name = os.path.split(report_file_path)
-        with open(report_file_path, "rb", encoding="utf8") as attachment:
+        with open(report_file_path, "rb") as attachment:
             mime_type, _ = mimetypes.guess_type(report_file_path)
             if mime_type == 'application/zip':
                 part = MIMEBase('application', 'zip')
@@ -76,11 +76,10 @@ class Emailer(object):
                                     "either  a ZIP archive or an Excel XLSX file.")
                 part = MIMEBase("application", "octet-stream")
 
-
-        part.set_payload((attachment).read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f"attachment; filename= {report_file_name}")
-        message.attach(part)
+            part.set_payload((attachment).read())
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', f"attachment; filename= {report_file_name}")
+            message.attach(part)
 
         # Set message body
         message.attach(MIMEText(body, 'plain'))

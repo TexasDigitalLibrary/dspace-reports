@@ -5,6 +5,8 @@ from datetime import datetime
 import logging
 import sys
 
+from psycopg import sql
+
 from database_manager import DatabaseManager
 from lib.database import Database
 from lib.emailer import Emailer
@@ -73,7 +75,7 @@ class RunReports():
         csv_report_files = []
         for report in reports:
             csv_report_file = self.create_csv_report(report=report)
-            self.logger.info("Created CSV report file: %s.", csv_report_file=csv_report_file)
+            self.logger.info("Created CSV report file: %s.", csv_report_file)
 
             # Convert column names to human readable text
             csv_report_files.append(csv_report_file)
@@ -106,21 +108,26 @@ class RunReports():
 
         if report is None:
             self.logger.error("Must specify a report.")
-            return
+            return None
 
         # Vars
         column_names = []
         data = []
 
+        self.logger.debug("Creating CSV file for report %s...", report['table'])
+
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                print(cursor.mogrify(f"SELECT * FROM {report['table']} ORDER BY {report['orderBy']} ASC"))
-                cursor.execute(f"SELECT * FROM {report['table']} ORDER BY {report['orderBy']} ASC")
+                self.logger.debug(cursor.mogrify(sql.SQL("SELECT * FROM {} ORDER BY {} ASC").format(sql.Identifier(report['table']), sql.Identifier(report['orderBy'],))))
+                cursor.execute(sql.SQL("SELECT * FROM {} ORDER BY {} ASC").format(sql.Identifier(report['table']), sql.Identifier(report['orderBy'],)))
 
                 desc = cursor.description
                 column_names = [col[0] for col in desc]
+                self.logger.debug("Report has %s columns.", str(len(column_names)))
                 data = [dict(zip(column_names, row))
                         for row in cursor.fetchall()]
+
+        self.logger.debug("Report has %s rows.", str(len(data)))
 
         # Save raw database table in a CSV file
         report_csv_file = self.output.save_report_csv_file(
@@ -149,7 +156,7 @@ class RunReports():
             output_file_path=output_file_path, worksheet_files=csv_report_files)
         if excel_report_file:
             self.logger.info("Finished saving Excel file to %s.",
-                             excel_report_file=excel_report_file)
+                             excel_report_file)
             return excel_report_file
 
         self.logger.error("There was an error saving the Excel file.")
@@ -169,7 +176,7 @@ class RunReports():
                                                                  )
         if zip_report_archive:
             self.logger.info("Finished saving ZIP archive to %s.",
-                             zip_report_archive=zip_report_archive)
+                             zip_report_archive)
             return zip_report_archive
 
         self.logger.error("There was an error saving the ZIP archive.")
@@ -198,7 +205,7 @@ class RunReports():
             for i, column_name in enumerate(column_names):
                 self.logger.debug("Looking at column name: %s.", column_names[i])
                 if column_name in column_map:
-                    self.logger.debug("Changing column name to %s.", column_name)
+                    self.logger.debug("Changing column name to %s.", column_map[column_name])
                     column_names[i] = column_map[column_name]
 
         return column_names

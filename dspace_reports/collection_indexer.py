@@ -57,7 +57,7 @@ class CollectionIndexer(Indexer):
                              time_period)
             self.index_collection_views(time_period=time_period)
 
-            self.logger.info("Updating downloads statistics for collection during time period: %s",
+            self.logger.info("Updating downloads statistics for collections during time period: %s",
                              time_period)
             self.index_collection_downloads(time_period=time_period)
 

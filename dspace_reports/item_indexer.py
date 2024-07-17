@@ -43,7 +43,6 @@ class ItemIndexer(Indexer):
                     item_owning_collection = self.rest.get_item_owning_collection(
                         item_uuid=item_uuid)
                     if item_owning_collection is not None:
-                        self.logger.info(item_owning_collection)
                         item_owning_collection_name = item_owning_collection['name']
 
                     if len(item_owning_collection_name) > 255:
@@ -51,7 +50,7 @@ class ItemIndexer(Indexer):
                                             "It will be shortened to that length.")
                         item_owning_collection_name = item_owning_collection_name[0:251] + "..."
 
-                        self.logger.info("Item owning collection: %s ", item_owning_collection_name)
+                    self.logger.info("Item owning collection: %s ", item_owning_collection_name)
 
                     # If name is None then use "Untitled"
                     if item_name is not None:
