@@ -16,13 +16,6 @@ class ItemIndexer(Indexer):
     def __init__(self, config, logger):
         super().__init__(config, logger)
 
-        # Create OAI-PMH server object
-        self.oai = DSpaceOai(oai_server=config['oai_server'])
-        if self.oai is None:
-            self.logger.error("Unable to create Indexer due to earlier failures creating a " +
-                              "connection to OAI-PMH feed.")
-            sys.exit(1)
-
         # Set time periods to only month and year as all can cause Solr to crash
         self.time_periods = ['month', 'year', 'all']
 
@@ -30,69 +23,54 @@ class ItemIndexer(Indexer):
         self.delay = config['delay']
 
     def index(self):
-        # Get list of identifiers from OAI-PMH feed
-        records = self.oai.get_records()
-        total_records = len(records)
-        self.logger.info("Found %s records in OAI-PMH feed.", str(total_records))
+        # Get list of identifiers from REST API
+        items = self.rest.get_items()
+        total_items = len(items)
+        self.logger.info("Found %s records in REST API.", str(total_items))
 
         # Keep a count of records that cannot be found by their metadata
-        count_records = 0
-        count_missing_records = 0
+        count_items = 0
 
-        # Iterate over OAI-PMH records and call REST API for addiional metadata
+        # Iterate over records and call REST API for additional metadata
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                for record in records:
-                    count_records = count_records + 1
-                    self.logger.info("(%s/%s) - Calling REST API for record: %s",
-                                     str(count_records), str(total_records), record)
+                for item in items:
+                    count_items += 1
 
-                    metadata_entry = '{"key":"dc.identifier.uri", "value":"%s"}' %(record)
-                    items = self.rest.find_items_by_metadata_field(metadata_entry=metadata_entry,
-                                                                   expand=['parentCollection'])
-                    if len(items) == 1:
-                        item = items[0]
-                        item_id = item['uuid']
-                        item_name = item['name']
+                    # Get item metadata
+                    item_uuid = item['uuid']
+                    item_name = item['name']
 
-                        # Attempt to get collection name
-                        item_collection_name = "Unknown"
-                        if 'parentCollection' in item:
-                            item_collection = item['parentCollection']
-                            item_collection_name = item_collection['name']
+                    # Attempt to get collection name
+                    item_owning_collection_name = "Unknown"
+                    item_owning_collection = self.rest.get_item_owning_collection(
+                        item_uuid=item_uuid)
+                    if item_owning_collection is not None:
+                        self.logger.info(item_owning_collection)
+                        item_owning_collection_name = item_owning_collection['name']
 
-                        if len(item_collection_name) > 255:
-                            self.logger.debug("Collection name is longer than 255 characters. " +
-                                              "It will be shortened to that length.")
-                            item_collection_name = item_collection_name[0:251] + "..."
+                    if len(item_owning_collection_name) > 255:
+                        self.logger.debug("Collection name is longer than 255 characters. " +
+                                            "It will be shortened to that length.")
+                        item_owning_collection_name = item_owning_collection_name[0:251] + "..."
 
-                            self.logger.info("Item collection: %s ", item_collection_name)
+                        self.logger.info("Item owning collection: %s ", item_owning_collection_name)
 
-                        # If name is null then use "Untitled"
-                        if item_name is not None:
-                            # If item name is longer than 255 characters then shorten it
-                            # to fit in database field
-                            if len(item_name) > 255:
-                                item_name = item_name[0:251] + "..."
-                        else:
-                            item_name = "Untitled"
-
-                        # Create handle URL for item
-                        item_url = self.base_url + item['handle']
-
-                        self.logger.debug(cursor.mogrify(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ({item_collection_name}, {item_id}, {item_name}, {item_url}) ON CONFLICT DO NOTHING"))
-                        cursor.execute(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ({item_collection_name}, {item_id}, {item_name}, {item_url}) ON CONFLICT DO NOTHING")
-                        db.commit()
+                    # If name is null then use "Untitled"
+                    if item_name is not None:
+                        # If item name is longer than 255 characters then shorten it
+                        # to fit in database field
+                        if len(item_name) > 255:
+                            item_name = item_name[0:251] + "..."
                     else:
-                        count_missing_records += 1
-                        self.logger.error("Unable to find item in REST API: %s", record)
+                        item_name = "Untitled"
 
-        self.logger.info("Total records in OAI-PMH feed: %s", str(len(records)))
+                    # Create handle URL for item
+                    item_url = self.base_url + item['handle']
 
-        if count_missing_records > 0 and total_records > 0:
-            self.logger.info("Total records missing in OAI-PMH feed: %s (%.0f%%)",
-                             str(count_missing_records),
-                             (100 * count_missing_records/total_records))
+                    self.logger.debug(cursor.mogrify(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ('{item_owning_collection_name}', '{item_uuid}, '{item_name}', '{item_url}') ON CONFLICT DO NOTHING"))
+                    cursor.execute(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ('{item_owning_collection_name}', '{item_uuid}', '{item_name}', '{item_url}') ON CONFLICT DO NOTHING")
+                    db.commit()
 
         for time_period in self.time_periods:
             self.logger.info("Indexing Solr views for time period: %s ", time_period)

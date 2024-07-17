@@ -18,72 +18,52 @@ class CollectionIndexer(Indexer):
     def index_collections(self):
         """Index the collections in the repository"""
 
-        # List of collections
-        collections = []
+        # Get a list of all collections from the REST API
+        collections = self.rest.get_collections()
+        for collection in collections:
+            collection_uuid = collection['uuid']
+            collection_name = collection['name']
+            self.logger.info("Loading collection: %s (%s)...", collection_name, collection_uuid)
 
-        # Get top level communities
-        top_communities = self.rest.get_top_level_communities()
+            # Get collection metadata, including parent community name
+            collection_handle = collection['handle']
+            collection_url = self.base_url + collection_handle
 
-        if 'community' in top_communities:
-            communities = top_communities['community']
-            self.logger.info("Repository has %s top-level communities.", str(len(communities)))
+            parent_community_name = "Unknown"
+            parent_community = self.rest.get_collection_parent_community(
+                collection_uuid=collection_uuid)
+            if 'name' in parent_community:
+                parent_community_name = parent_community['name']
 
-            for community in communities:
-                self.load_collections_recursive(collections, community)
-        else:
-            self.logger.info("Repository has no communities.")
+            if len(collection_name) > 255:
+                self.logger.debug("Collection name is longer than 255 characters. It will be shortened to that length.")
+                collection_name = collection_name[0:251] + "..."
 
+            # Insert the collection into the database
+            with Database(self.config['statistics_db']) as db:
+                with db.cursor() as cursor:
+                    cursor.execute(f"INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES ('{parent_community_name}', '{collection_uuid}', '{collection_name}', '{collection_url}') ON CONFLICT DO NOTHING")
+                    db.commit()
+
+            for time_period in self.time_periods:
+                self.logger.info("Indexing items for collection: %s (%s)", collection_name,
+                                 collection_uuid)
+                self.index_collection_items(collection_uuid=collection_uuid, time_period=time_period)
+
+        # Index all views and downloads of collections
         for time_period in self.time_periods:
-            self.logger.info("Updating views statistics for collections during time period: %s", time_period)
+            self.logger.info("Updating views statistics for collections during time period: %s",
+                             time_period)
             self.index_collection_views(time_period=time_period)
 
-            self.logger.info("Updating downloads statistics for collection during time period: %s", time_period)
+            self.logger.info("Updating downloads statistics for collection during time period: %s",
+                             time_period)
             self.index_collection_downloads(time_period=time_period)
 
-    def load_collections_recursive(self, collections, community):
-        """Load all collections recursively"""
-
-        community_id = community['id']
-        community_name = community['name']
-        self.logger.info("Loading collections of community %s (%s)", community_name, community_id)
-
-        if 'collection' in community:
-            collections = community['collection']
-            self.logger.info("Community has %s collections.", str(len(collections)))
-            for collection in collections:
-                collection_id = collection['id']
-                collection_name = collection['name']
-                collection_handle = collection['handle']
-                collection_url = self.base_url + collection_handle
-                self.logger.info("Loading collection: %s (%s)...", collection_name, collection_id)
-
-                if len(collection_name) > 255:
-                    self.logger.debug("Collection name is longer than 255 characters. It will be shortened to that length.")
-                    collection_name = collection_name[0:251] + "..."
-
-                # Insert the collection into the database
-                with Database(self.config['statistics_db']) as db:
-                    with db.cursor() as cursor:
-                        cursor.execute(f"INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES ({community_name}, {collection_id}, {collection_name}, {collection_url}) ON CONFLICT DO NOTHING")
-                        db.commit()
-
-                for time_period in self.time_periods:
-                    self.logger.info("Indexing items for collection: %s (%s)", collection_id, collection_name)
-                    self.index_collection_items(collection_id=collection_id, time_period=time_period)
-        else:
-            self.logger.info("There are no collections in this community.")
-
-        if 'community' in community:
-            sub_communities = community['community']
-            for sub_community in sub_communities:
-                self.load_collections_recursive(collections, sub_community)
-        else:
-            self.logger.info("There are no subcommunities in this community.")
-
-    def index_collection_items(self, collection_id=None, time_period=None):
+    def index_collection_items(self, collection_uuid=None, time_period=None):
         """Index the collection items"""
 
-        if collection_id is None or time_period is None:
+        if collection_uuid is None or time_period is None:
             return
 
         # Create base Solr URL
@@ -111,8 +91,8 @@ class CollectionIndexer(Indexer):
         else:
             self.logger.error("Error creating date range.")
 
-        # Add community UUID to query parameter
-        solr_query_params['q'] = solr_query_params['q'] + " AND location.coll:" + collection_id
+        # Add collection UUID to query parameter
+        solr_query_params['q'] = solr_query_params['q'] + " AND location.coll:" + collection_uuid
 
         # Make call to Solr for items statistics
         response = self.solr.call(url=solr_url, params=solr_query_params)
@@ -130,14 +110,14 @@ class CollectionIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_last_month = {results_total_items} WHERE collection_id = '{collection_id}'"))
-                    cursor.execute(f"UPDATE collection_stats SET items_last_month = {results_total_items} WHERE collection_id = '{collection_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_last_month = {results_total_items} WHERE collection_id = '{collection_uuid}'"))
+                    cursor.execute(f"UPDATE collection_stats SET items_last_month = {results_total_items} WHERE collection_id = '{collection_uuid}'")
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_academic_year = {results_total_items} WHERE collection_id = '{collection_id}'"))
-                    cursor.execute(f"UPDATE collection_stats SET items_academic_year = {results_total_items} WHERE collection_id = '{collection_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_academic_year = {results_total_items} WHERE collection_id = '{collection_uuid}'"))
+                    cursor.execute(f"UPDATE collection_stats SET items_academic_year = {results_total_items} WHERE collection_id = '{collection_uuid}'")
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_total = {results_total_items} WHERE collection_id = '{collection_id}'"))
-                    cursor.execute(f"UPDATE collection_stats SET items_total = {results_total_items} WHERE collection_id = '{collection_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_total = {results_total_items} WHERE collection_id = '{collection_uuid}'"))
+                    cursor.execute(f"UPDATE collection_stats SET items_total = {results_total_items} WHERE collection_id = '{collection_uuid}'")
 
                 # Commit changes
                 db.commit()
@@ -154,7 +134,7 @@ class CollectionIndexer(Indexer):
         # Default Solr params
         solr_query_params = {
             "q": f"type:2 AND owningColl:/.{{36}}/",
-            "fq": "-isBot:true AND statistics_type:view",
+            "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
             "fl": "owningColl",
             "facet": "true",
             "facet.field": "owningColl",
@@ -186,7 +166,7 @@ class CollectionIndexer(Indexer):
         self.logger.info("Calling Solr total collection views in collections: %s", response.url)
 
         try:
-            # get total number of distinct facets (countDistinct)
+            # Get total number of distinct facets (countDistinct)
             results_total_num_facets = response.json()["stats"]["stats_fields"]["owningColl"][
                 "countDistinct"
             ]
@@ -194,7 +174,7 @@ class CollectionIndexer(Indexer):
             self.logger.info("No collection views to index.")
             return
 
-        # divide results into "pages" and round up to next integer
+        # Divide results into "pages" and round up to next integer
         results_per_page = 100
         results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
@@ -210,7 +190,7 @@ class CollectionIndexer(Indexer):
                     # Solr params for current page
                     solr_query_params = {
                         "q": f"type:2 AND owningColl:/.{{36}}/",
-                        "fq": "-isBot:true AND statistics_type:view",
+                        "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
                         "fl": "owningColl",
                         "facet": "true",
                         "facet.field": "owningColl",
@@ -236,16 +216,16 @@ class CollectionIndexer(Indexer):
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
                     # Iterate over the facetField dict and get the ids and views
-                    for collection_id, collection_views in views["owningColl"].items():
+                    for collection_uuid, collection_views in views["owningColl"].items():
                         if time_period == 'month':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_id}'"))
-                            cursor.execute(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_id}'")
+                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'"))
+                            cursor.execute(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'")
                         elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_id}'"))
-                            cursor.execute(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_id}'")
+                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'"))
+                            cursor.execute(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'")
                         else:
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_id}'"))
-                            cursor.execute(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_id}'")
+                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'"))
+                            cursor.execute(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'")
 
                     # Commit changes to database
                     db.commit()
@@ -335,7 +315,8 @@ class CollectionIndexer(Indexer):
                     }
 
                     if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
+                        self.logger.info("Searching date range: %s - %s", date_range[0],
+                                         date_range[1])
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
@@ -347,16 +328,16 @@ class CollectionIndexer(Indexer):
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
                     # Iterate over the facetField dict and get the ids and views
-                    for collection_id, collection_downloads in downloads["owningColl"].items():
+                    for collection_uuid, collection_downloads in downloads["owningColl"].items():
                         if time_period == 'month':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_id}'"))
-                            cursor.execute(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_id}'")
+                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
+                            cursor.execute(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
                         elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_id}'"))
-                            cursor.execute(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_id}")
+                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
+                            cursor.execute(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}")
                         else:
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_id}'"))
-                            cursor.execute(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_id}'")
+                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
+                            cursor.execute(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
 
                     # Commit changes to database
                     db.commit()

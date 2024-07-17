@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "dspace-reports"
-version = "1.3.0"
-description = "A python3-based tool to generate and email views and downloads statistical reports for a DSpace repository."
+version = "2.0-SNAPSHOT"
+description = "A python3-based tool to generate and email views and downloads statistical reports for a DSpace 7+ repository."
 authors = ["Nicholas Woodward <njw@austin.utexas.edu>"]
 license = "GPLv3"
 readme = "README.md"

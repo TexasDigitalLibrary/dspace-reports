@@ -120,26 +120,32 @@ class DSpaceRestApi():
         final_url = self.api_url + command + parameters
         return final_url
 
-    def rest_call(self, call_type='GET', url='', headers=None, data=None):
+    def rest_call(self, call_type='GET', url='', params=None, data=None, headers=None):
         """Make call to REST API"""
 
-        if headers is None:
-            headers = self.session.headers
+        if params is None:
+            params = {}
 
         if data is None:
             data = {}
 
+        if headers is None:
+            headers = self.session.headers
+
         self.logger.debug("Calling REST API with URL: %s", url)
 
-        if call_type == 'POST':
-            response = self.session.post(url, headers=headers, cookies=self.cookies, data=data)
+        if call_type == 'GET':
+            response = self.session.get(url, params=params, headers=headers, cookies=self.cookies)
         else:
-            response = self.session.get(url, headers=headers, cookies=self.cookies)
+            response = self.session.post(url, data=data, params=params,
+                                         cookies=self.cookies, headers=headers)
 
-        self.logger.debug(response.status_code)
-        self.logger.debug(response.text)
-        response_json = response.json()
-        return response_json
+        if response.status_code == 200:
+            return response.json()
+
+        self.logger.error("Error while making rest call, (HTTP code: %s) %s",
+                          response.status_code, response.text)
+        return None
 
     def get_site(self):
         """Get site information"""
@@ -157,15 +163,25 @@ class DSpaceRestApi():
     def get_communities(self):
         """Get all communities"""
 
+        communities = []
         communities_url = self.construct_url(command = 'core/communities')
-        communities = self.rest_call(url = communities_url)
+        communities_response = self.rest_call(url = communities_url)
+        if communities_response is not None and '_embedded' in communities_response:
+            if 'communities' in communities_response['_embedded']:
+                communities = communities_response['_embedded']['communities']
+
         return communities
 
     def get_top_level_communities(self):
         """Get top level communities"""
 
+        top_communities = []
         top_communities_url = self.construct_url(command = 'core/communities/search/top')
-        top_communities = self.rest_call(url = top_communities_url)
+        top_communities_response = self.rest_call(url = top_communities_url)
+        if top_communities_response is not None and '_embedded' in top_communities_response:
+            if 'communities' in top_communities_response['_embedded']:
+                top_communities = top_communities_response['_embedded']['communities']
+
         return top_communities
 
     def get_community(self, community_uuid=None):
@@ -173,9 +189,78 @@ class DSpaceRestApi():
 
         if community_uuid is None:
             return None
+
+        community = None
         community_url = self.construct_url(command = f"core/communities/{community_uuid}")
-        community = self.rest_call(url = community_url)
+        community_response = self.rest_call(url = community_url)
+        if community_response is not None:
+            community = community_response[0]
+
         return community
+
+    def get_collections(self, sort=None):
+        """Get all collections"""
+
+        params = {}
+        if sort is not None:
+            params['sort'] = sort
+
+        collections = []
+        page = 0
+        params['page'] = page
+        size = 20
+        params['size'] = size
+
+        collections_url = self.construct_url(command = 'core/collections')
+        total_collections = 0
+        total_pages = 0
+
+        while True:
+            self.logger.info("Loading page %s of collections...", str(page))
+
+            collections_response = self.rest_call(url = collections_url, params = params)
+            if collections_response is not None and '_embedded' in collections_response:
+                # Get collections from this page of results
+                if 'collections' in collections_response['_embedded']:
+                    self.logger.info(collections_response['_embedded']['collections'])
+                    for collection_json in collections_response['_embedded']['collections']:
+                        collections.append(collection_json)
+
+                # Check API response for amount of total collections and pages
+                if 'page' in collections_response:
+                    page_info = collections_response['page']
+                    if 'totalElements' in page_info:
+                        total_collections = page_info['totalElements']
+                    if 'totalPages' in page_info:
+                        total_pages = page_info['totalPages']
+
+                page += 1
+                if total_pages > 0 and page == total_pages:
+                    break
+
+                params['page'] = page
+            else:
+                break
+
+        # Sanity check to make sure all pages were retrieved
+        if len(collections) != total_collections:
+            self.logger.error("There was a problem retrieving collections from the API.")
+            self.logger.error("Collections retrieved: %s. Total collections reported by API: %s",
+                              str(len(collections)), str(total_collections))
+        else:
+            self.logger.info("Retrieved %s collection(s) from the REST API.", str(len(collections)))
+
+        return collections
+
+    def get_collection_parent_community(self, collection_uuid=None):
+        """Get Parent community of a given collection"""
+
+        if collection_uuid is None:
+            return None
+
+        parent_community_url = self.construct_url(
+            command = f"core/collections/{collection_uuid}/parentCommunity")
+        return self.rest_call(url = parent_community_url)
 
     def get_collection_items(self, collection_uuid=None):
         """Get items of a collection"""
@@ -186,39 +271,59 @@ class DSpaceRestApi():
         items = self.rest_call(url = items_url)
         return items
 
-    def get_items(self, expand=None):
-        """Get all items in the repository"""
+    def get_items(self, sort=None):
+        """Get all items"""
 
-        if expand is None:
-            expand = []
-
-        offset = 0
         params = {}
-        expand_value = ''
-        all_items = []
+        if sort is not None:
+            params['sort'] = sort
 
-        if len(expand) > 0:
-            expand_value = ','.join(expand)
-            params['expand'] = expand_value
-            self.logger.debug("Added expand list to parameters: %s ", expand_value)
+        items = []
+        page = 0
+        params['page'] = page
+        size = 100
+        params['size'] = size
+
+        items_url = self.construct_url(command = 'core/items')
+        total_items = 0
+        total_pages = 0
 
         while True:
-            self.logger.debug("Retrieving items %s through %s from the REST API", offset,
-                              offset + self.limit)
-            params['offset'] = offset
-            params['limit'] = self.limit
+            self.logger.info("Loading page %s of items...", str(page))
 
-            items_url = self.construct_url(command = 'items', params = params)
-            self.logger.debug("Items Solr call: %s", items_url)
-            items = self.rest_call(url = items_url)
+            items_response = self.rest_call(url = items_url, params = params)
+            if items_response is not None and '_embedded' in items_response:
+                # Get items from this page of results
+                if 'items' in items_response['_embedded']:
+                    self.logger.info(items_response['_embedded']['items'])
+                    for item_json in items_response['_embedded']['items']:
+                        items.append(item_json)
 
-            if len(items) == 0:
+                # Check API response for amount of total items and pages
+                if 'page' in items_response:
+                    page_info = items_response['page']
+                    if 'totalElements' in page_info:
+                        total_items = page_info['totalElements']
+                    if 'totalPages' in page_info:
+                        total_pages = page_info['totalPages']
+
+                page += 1
+                if total_pages > 0 and page == total_pages:
+                    break
+
+                params['page'] = page
+            else:
                 break
 
-            all_items = all_items + items
-            offset = offset + self.limit
+        # Sanity check to make sure all pages were retrieved
+        if len(items) != total_items:
+            self.logger.error("There was a problem retrieving items from the API.")
+            self.logger.error("Items retrieved: %s. Total items reported by API: %s",
+                              str(len(items)), str(total_items))
+        else:
+            self.logger.info("Retrieved %s items(s) from the REST API.", str(len(items)))
 
-        return all_items
+        return items
 
     def find_items_by_metadata_field(self, metadata_entry=None, expand=None):
         """Find an item by any metadata field(s)"""
@@ -231,6 +336,8 @@ class DSpaceRestApi():
 
         params = {}
         expand_value = ''
+
+        items = []
 
         if len(expand) > 0:
             expand_value = ','.join(expand)
@@ -245,15 +352,26 @@ class DSpaceRestApi():
                                headers = self.request_headers, data = metadata_entry)
         return items
 
-    def get_item(self, item_id=None):
+    def get_item(self, item_uuid=None):
         """Get an individual item"""
 
-        if item_id is None:
+        if item_uuid is None:
             return None
 
-        item_url = self.construct_url(command = f"items/{item_id}")
+        item_url = self.construct_url(command = f"core/items/{item_uuid}")
         item = self.rest_call(url = item_url)
         return item
+
+    def get_item_owning_collection(self, item_uuid=None):
+        """Get owning collection of a given item"""
+
+        if item_uuid is None:
+            return None
+
+        item_owning_collection_url = self.construct_url(
+            command = f"core/items/{item_uuid}/owningCollection")
+        item_owning_collection = self.rest_call(url = item_owning_collection_url)
+        return item_owning_collection
 
     def update_token(self, req):
         """Update CSRF token"""

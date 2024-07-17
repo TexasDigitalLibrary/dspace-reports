@@ -17,40 +17,40 @@ class RepositoryIndexer(Indexer):
         """Index the entire repository"""
 
         # Get repository information
-        repository_id = 0
+        repository_uuid = 0
         repository_name = "Unknown"
 
         site = self.rest.get_site()
         if 'uuid' in site:
-            repository_id = site['uuid']
+            repository_uuid = site['uuid']
 
         if 'name' in site:
             repository_name = site['name']
 
-        self.logger.info("Indexing Repository: %s (UUID: %s)", repository_name, repository_id)
+        self.logger.info("Indexing Repository: %s (UUID: %s)", repository_name, repository_uuid)
 
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                self.logger.debug(cursor.mogrify(f"INSERT INTO repository_stats (repository_id, repository_name) VALUES ({repository_id}, {repository_name})"))
-                cursor.execute(f"INSERT INTO repository_stats (repository_id, repository_name) VALUES ({repository_id}, {repository_name})")
+                self.logger.debug(cursor.mogrify(f"INSERT INTO repository_stats (repository_id, repository_name) VALUES ('{repository_uuid}', '{repository_name}')"))
+                cursor.execute(f"INSERT INTO repository_stats (repository_id, repository_name) VALUES ('{repository_uuid}', '{repository_name}')")
 
                 db.commit()
 
         # Index views and downloads for the current community
         for time_period in self.time_periods:
             self.logger.info("Indexing repository items.")
-            self.index_repository_items(repository_id=repository_id, time_period=time_period)
+            self.index_repository_items(repository_uuid=repository_uuid, time_period=time_period)
 
             self.logger.info("Indexing repository views.")
-            self.index_repository_views(repository_id=repository_id, time_period=time_period)
+            self.index_repository_views(repository_uuid=repository_uuid, time_period=time_period)
 
             self.logger.info("Indexing repository downloads.")
-            self.index_repository_downloads(repository_id=repository_id, time_period=time_period)
+            self.index_repository_downloads(repository_uuid=repository_uuid, time_period=time_period)
 
-    def index_repository_items(self, repository_id=None, time_period=None):
+    def index_repository_items(self, repository_uuid=None, time_period=None):
         """Index repository items"""
 
-        if repository_id is None or time_period is None:
+        if repository_uuid is None or time_period is None:
             return
 
         # Create base Solr URL
@@ -93,22 +93,22 @@ class RepositoryIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_last_month = {results_total_items} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET items_last_month = {results_total_items} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_last_month = {results_total_items} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET items_last_month = {results_total_items} WHERE repository_id = '{repository_uuid}'")
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_academic_year = {results_total_items} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET items_academic_year = {results_total_items} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_academic_year = {results_total_items} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET items_academic_year = {results_total_items} WHERE repository_id = '{repository_uuid}'")
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_total = {results_total_items} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET items_total = {results_total_items} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_total = {results_total_items} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET items_total = {results_total_items} WHERE repository_id = '{repository_uuid}'")
 
                 # Commit changes
                 db.commit()
 
-    def index_repository_views(self, repository_id=None, time_period=None):
+    def index_repository_views(self, repository_uuid=None, time_period=None):
         """Index repository views"""
 
-        if repository_id is None or time_period is None:
+        if repository_uuid is None or time_period is None:
             return
 
         # Create base Solr url
@@ -157,22 +157,22 @@ class RepositoryIndexer(Indexer):
             with db.cursor() as cursor:
                 self.logger.info("Setting repository views stats with %s views for time period: %s", str(results_num_found), time_period)
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_last_month = {results_num_found} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET views_last_month = {results_num_found} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_last_month = {results_num_found} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET views_last_month = {results_num_found} WHERE repository_id = '{repository_uuid}'")
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_academic_year = {results_num_found} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET views_academic_year = {results_num_found} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_academic_year = {results_num_found} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET views_academic_year = {results_num_found} WHERE repository_id = '{repository_uuid}'")
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_total = {results_num_found} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET views_total = {results_num_found} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_total = {results_num_found} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET views_total = {results_num_found} WHERE repository_id = '{repository_uuid}'")
 
                 # Commit changes
                 db.commit()
 
-    def index_repository_downloads(self, repository_id=None, time_period=None):
+    def index_repository_downloads(self, repository_uuid=None, time_period=None):
         """Index repository downloads"""
 
-        if repository_id is None or time_period is None:
+        if repository_uuid is None or time_period is None:
             return
 
         # Get Solr shards
@@ -221,14 +221,14 @@ class RepositoryIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_last_month = downloads_last_month + {results_num_found} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET downloads_last_month = downloads_last_month + {results_num_found} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_last_month = downloads_last_month + {results_num_found} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET downloads_last_month = downloads_last_month + {results_num_found} WHERE repository_id = '{repository_uuid}'")
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + {results_num_found} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + {results_num_found} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + {results_num_found} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + {results_num_found} WHERE repository_id = '{repository_uuid}'")
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_total = downloads_total + {results_num_found} WHERE repository_id = '{repository_id}'"))
-                    cursor.execute(f"UPDATE repository_stats SET downloads_total = downloads_total + {results_num_found} WHERE repository_id = '{repository_id}'")
+                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_total = downloads_total + {results_num_found} WHERE repository_id = '{repository_uuid}'"))
+                    cursor.execute(f"UPDATE repository_stats SET downloads_total = downloads_total + {results_num_found} WHERE repository_id = '{repository_uuid}'")
 
                 # Commit changes
                 db.commit()

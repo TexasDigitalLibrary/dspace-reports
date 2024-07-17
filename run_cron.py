@@ -20,7 +20,7 @@ def main():
     parser.add_argument("-o", "--output_dir", dest="output_dir", action='store', type=str,
                         help="Directory for results files.")
     parser.add_argument("-e", "--send_email", dest="send_email",
-                        action=argparse.BooleanOptionalAction,
+                        action='store_true',
                         help="Send email with stats reports?")
 
     args = parser.parse_args()
