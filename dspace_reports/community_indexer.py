@@ -351,14 +351,14 @@ class CommunityIndexer(Indexer):
                     for community_uuid, community_downloads in downloads["owningComm"].items():
                         if len(community_uuid) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, community_downloads)))
-                                cursor.execute("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, community_downloads))
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, community_uuid)))
+                                cursor.execute("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, community_uuid))
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, community_downloads)))
-                                cursor.execute("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, community_downloads))
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, community_uuid)))
+                                cursor.execute("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, community_uuid))
                             else:
-                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, community_downloads)))
-                                cursor.execute("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, community_downloads))
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, community_uuid)))
+                                cursor.execute("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, community_uuid))
                         else:
                             self.logger.warning("owningComm value is not a UUID: %s",
                                                 community_uuid)
