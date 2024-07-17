@@ -1,11 +1,8 @@
 """Class for indexing items"""
 
 import math
-import sys
-
 from time import sleep
 
-from lib.oai import DSpaceOai
 from lib.database import Database
 from dspace_reports.indexer import Indexer
 
@@ -56,7 +53,7 @@ class ItemIndexer(Indexer):
 
                         self.logger.info("Item owning collection: %s ", item_owning_collection_name)
 
-                    # If name is null then use "Untitled"
+                    # If name is None then use "Untitled"
                     if item_name is not None:
                         # If item name is longer than 255 characters then shorten it
                         # to fit in database field
@@ -68,8 +65,8 @@ class ItemIndexer(Indexer):
                     # Create handle URL for item
                     item_url = self.base_url + item['handle']
 
-                    self.logger.debug(cursor.mogrify(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ('{item_owning_collection_name}', '{item_uuid}, '{item_name}', '{item_url}') ON CONFLICT DO NOTHING"))
-                    cursor.execute(f"INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES ('{item_owning_collection_name}', '{item_uuid}', '{item_name}', '{item_url}') ON CONFLICT DO NOTHING")
+                    self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url)))
+                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url))
                     db.commit()
 
         for time_period in self.time_periods:
@@ -177,14 +174,14 @@ class ItemIndexer(Indexer):
                     for item_uuid, item_views in views["id"].items():
                         if len(item_uuid) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_uuid}'"))
-                                cursor.execute(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE item_stats SET views_last_month = %s WHERE item_id = %s", (item_views, item_uuid)))
+                                cursor.execute("UPDATE item_stats SET views_last_month = %s WHERE item_id = %s", (item_views, item_uuid))
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_uuid}'"))
-                                cursor.execute(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE item_stats SET views_academic_year = %s WHERE item_id = %s", (item_views, item_uuid)))
+                                cursor.execute("UPDATE item_stats SET views_academic_year = %s WHERE item_id = %s", (item_views, item_uuid))
                             else:
-                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_uuid}'"))
-                                cursor.execute(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE item_stats SET views_total = %s WHERE item_id = %s", (item_views, item_uuid)))
+                                cursor.execute("UPDATE item_stats SET views_total = %s WHERE item_id = %s", (item_views, item_uuid))
                         else:
                             self.logger.warning("Item ID value is not a UUID: %s",
                                                 item_uuid)
@@ -294,14 +291,14 @@ class ItemIndexer(Indexer):
                     for item_uuid, item_downloads in downloads["owningItem"].items():
                         if len(item_uuid) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_uuid}'"))
-                                cursor.execute(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_last_month = %s WHERE item_id = %s", (item_downloads, item_uuid)))
+                                cursor.execute("UPDATE item_stats SET downloads_last_month = %s WHERE item_id = %s", (item_downloads, item_uuid))
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_uuid}'"))
-                                cursor.execute(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_academic_year = %s WHERE item_id = %s", (item_downloads, item_uuid)))
+                                cursor.execute("UPDATE item_stats SET downloads_academic_year = %s WHERE item_id = %s", (item_downloads, item_uuid))
                             else:
-                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_uuid}'"))
-                                cursor.execute(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE item_stats SET downloads_total = %s WHERE item_id = %s", (item_downloads, item_uuid)))
+                                cursor.execute("UPDATE item_stats SET downloads_total = %s WHERE item_id = %s", (item_downloads, item_uuid))
                         else:
                             self.logger.warning("Item ID value is not a UUID: %s",
                                                 item_uuid)

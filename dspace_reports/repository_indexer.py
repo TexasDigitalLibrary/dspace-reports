@@ -31,8 +31,8 @@ class RepositoryIndexer(Indexer):
 
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                self.logger.debug(cursor.mogrify(f"INSERT INTO repository_stats (repository_id, repository_name) VALUES ('{repository_uuid}', '{repository_name}')"))
-                cursor.execute(f"INSERT INTO repository_stats (repository_id, repository_name) VALUES ('{repository_uuid}', '{repository_name}')")
+                self.logger.debug(cursor.mogrify("INSERT INTO repository_stats (repository_id, repository_name) VALUES (%s, %s)", (repository_uuid, repository_name)))
+                cursor.execute("INSERT INTO repository_stats (repository_id, repository_name) VALUES (%s, %s)", (repository_uuid, repository_name))
 
                 db.commit()
 
@@ -93,14 +93,14 @@ class RepositoryIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_last_month = {results_total_items} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET items_last_month = {results_total_items} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_last_month = %s WHERE repository_id = %s", (results_total_items, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET items_last_month = %s WHERE repository_id = %s", (results_total_items, repository_uuid))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_academic_year = {results_total_items} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET items_academic_year = {results_total_items} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_academic_year = %s WHERE repository_id = %s", (results_total_items, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET items_academic_year = %s WHERE repository_id = %s", (results_total_items, repository_uuid))
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET items_total = {results_total_items} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET items_total = {results_total_items} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_total = %s WHERE repository_id = %s", (results_total_items, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET items_total = %s WHERE repository_id = %s", (results_total_items, repository_uuid))
 
                 # Commit changes
                 db.commit()
@@ -155,16 +155,17 @@ class RepositoryIndexer(Indexer):
 
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                self.logger.info("Setting repository views stats with %s views for time period: %s", str(results_num_found), time_period)
+                self.logger.info("Setting repository views stats with %s views for time period: %s",
+                                 str(results_num_found), time_period)
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_last_month = {results_num_found} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET views_last_month = {results_num_found} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET views_last_month = %s WHERE repository_id = %s", (results_num_found, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET views_last_month = %s WHERE repository_id = %s", (results_num_found, repository_uuid))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_academic_year = {results_num_found} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET views_academic_year = {results_num_found} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET views_academic_year = %s WHERE repository_id = %s", (results_num_found, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET views_academic_year = %s WHERE repository_id = %s", (results_num_found, repository_uuid))
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET views_total = {results_num_found} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET views_total = {results_num_found} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET views_total = %s WHERE repository_id = %s", (results_num_found, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET views_total = %s WHERE repository_id = %s", (results_num_found, repository_uuid))
 
                 # Commit changes
                 db.commit()
@@ -221,14 +222,14 @@ class RepositoryIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_last_month = downloads_last_month + {results_num_found} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET downloads_last_month = downloads_last_month + {results_num_found} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_last_month = downloads_last_month + %s WHERE repository_id = %s", (results_num_found, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET downloads_last_month = downloads_last_month + %s WHERE repository_id = %s", (results_num_found, repository_uuid))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + {results_num_found} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + {results_num_found} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + %s WHERE repository_id = %s", (results_num_found, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET downloads_academic_year = downloads_academic_year + %s WHERE repository_id = %s", (results_num_found, repository_uuid))
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE repository_stats SET downloads_total = downloads_total + {results_num_found} WHERE repository_id = '{repository_uuid}'"))
-                    cursor.execute(f"UPDATE repository_stats SET downloads_total = downloads_total + {results_num_found} WHERE repository_id = '{repository_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_total = downloads_total + %s WHERE repository_id = %s'", (results_num_found, repository_uuid)))
+                    cursor.execute("UPDATE repository_stats SET downloads_total = downloads_total + %s WHERE repository_id = %s", (results_num_found, repository_uuid))
 
                 # Commit changes
                 db.commit()

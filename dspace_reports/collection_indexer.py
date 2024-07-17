@@ -42,7 +42,8 @@ class CollectionIndexer(Indexer):
             # Insert the collection into the database
             with Database(self.config['statistics_db']) as db:
                 with db.cursor() as cursor:
-                    cursor.execute(f"INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES ('{parent_community_name}', '{collection_uuid}', '{collection_name}', '{collection_url}') ON CONFLICT DO NOTHING")
+                    self.logger.debug(cursor.mogrify("INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (parent_community_name, collection_uuid, collection_name, collection_url)))
+                    cursor.execute("INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (parent_community_name, collection_uuid, collection_name, collection_url))
                     db.commit()
 
             for time_period in self.time_periods:
@@ -110,14 +111,14 @@ class CollectionIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_last_month = {results_total_items} WHERE collection_id = '{collection_uuid}'"))
-                    cursor.execute(f"UPDATE collection_stats SET items_last_month = {results_total_items} WHERE collection_id = '{collection_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE collection_stats SET items_last_month = %s WHERE collection_id = %s", (results_total_items, collection_uuid)))
+                    cursor.execute("UPDATE collection_stats SET items_last_month = %s WHERE collection_id = %s", (results_total_items, collection_uuid))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_academic_year = {results_total_items} WHERE collection_id = '{collection_uuid}'"))
-                    cursor.execute(f"UPDATE collection_stats SET items_academic_year = {results_total_items} WHERE collection_id = '{collection_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE collection_stats SET items_academic_year = %s WHERE collection_id = %s", (results_total_items, collection_uuid)))
+                    cursor.execute("UPDATE collection_stats SET items_academic_year = %s WHERE collection_id = %s", (results_total_items, collection_uuid))
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET items_total = {results_total_items} WHERE collection_id = '{collection_uuid}'"))
-                    cursor.execute(f"UPDATE collection_stats SET items_total = {results_total_items} WHERE collection_id = '{collection_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE collection_stats SET items_total = %s WHERE collection_id = %s", (results_total_items, collection_uuid)))
+                    cursor.execute("UPDATE collection_stats SET items_total = %s WHERE collection_id = %s", (results_total_items, collection_uuid))
 
                 # Commit changes
                 db.commit()
@@ -219,14 +220,14 @@ class CollectionIndexer(Indexer):
                     for collection_uuid, collection_views in views["owningColl"].items():
                         if len(collection_uuid) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'"))
-                                cursor.execute(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_last_month = %s WHERE collection_id = %s"), (collection_views, collection_uuid))
+                                cursor.execute("UPDATE collection_stats SET views_last_month = %s WHERE collection_id = %s", (collection_views, collection_uuid))
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'"))
-                                cursor.execute(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_academic_year = %s WHERE collection_id = %s", (collection_views, collection_uuid)))
+                                cursor.execute("UPDATE collection_stats SET views_academic_year = %s WHERE collection_id = %s", (collection_views, collection_uuid))
                             else:
-                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'"))
-                                cursor.execute(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_total = %s WHERE collection_id = %s", (collection_views, collection_uuid)))
+                                cursor.execute("UPDATE collection_stats SET views_total = %s WHERE collection_id = %s", (collection_views, collection_uuid))
                         else:
                             self.logger.warning("owningColl value is not a UUID: %s",
                                                 collection_uuid)
@@ -335,14 +336,14 @@ class CollectionIndexer(Indexer):
                     for collection_uuid, collection_downloads in downloads["owningColl"].items():
                         if len(collection_uuid) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
-                                cursor.execute(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_last_month = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
+                                cursor.execute("UPDATE collection_stats SET downloads_last_month = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
-                                cursor.execute(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}")
+                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_academic_year = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
+                                cursor.execute("UPDATE collection_stats SET downloads_academic_year = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
                             else:
-                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
-                                cursor.execute(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_total = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
+                                cursor.execute("UPDATE collection_stats SET downloads_total = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
                         else:
                             self.logger.warning("owningColl value is not a UUID: %s",
                                                 collection_uuid)

@@ -54,8 +54,8 @@ class CommunityIndexer(Indexer):
          # Insert the community into the database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                self.logger.debug(cursor.mogrify(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ('{community_uuid}', '{community_name}', '{community_url}', '{parent_community_name}')"))
-                cursor.execute(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ('{community_uuid}', '{community_name}', '{community_url}', '{parent_community_name}')")
+                self.logger.debug(cursor.mogrify("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name)))
+                cursor.execute("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name))
                 db.commit()
 
         # Index views and downloads for the current community
@@ -125,14 +125,14 @@ class CommunityIndexer(Indexer):
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
-                    self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET items_last_month = {results_total_items} WHERE community_id = '{community_uuid}'"))
-                    cursor.execute(f"UPDATE community_stats SET items_last_month = {results_total_items} WHERE community_id = '{community_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET items_last_month = %s WHERE community_id = %s", (results_total_items, community_uuid)))
+                    cursor.execute("UPDATE community_stats SET items_last_month = %s WHERE community_id = %s", (results_total_items, community_uuid))
                 elif time_period == 'year':
-                    self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET items_academic_year = {results_total_items} WHERE community_id = '{community_uuid}'"))
-                    cursor.execute(f"UPDATE community_stats SET items_academic_year = {results_total_items} WHERE community_id = '{community_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET items_academic_year = %s WHERE community_id = %s", (results_total_items, community_uuid)))
+                    cursor.execute("UPDATE community_stats SET items_academic_year = %s WHERE community_id = %s", (results_total_items, community_uuid))
                 else:
-                    self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET items_total = {results_total_items} WHERE community_id = '{community_uuid}'"))
-                    cursor.execute(f"UPDATE community_stats SET items_total = {results_total_items} WHERE community_id = '{community_uuid}'")
+                    self.logger.debug(cursor.mogrify("UPDATE community_stats SET items_total = %s WHERE community_id = %s", (results_total_items, community_uuid)))
+                    cursor.execute("UPDATE community_stats SET items_total = %s WHERE community_id = %s", (results_total_items, community_uuid))
 
                 # Commit changes
                 db.commit()
@@ -237,14 +237,14 @@ class CommunityIndexer(Indexer):
                     for community_uuid, community_views in views["owningComm"].items():
                         if len(community_uuid) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_last_month = {community_views} WHERE community_id = '{community_uuid}'"))
-                                cursor.execute(f"UPDATE community_stats SET views_last_month = {community_views} WHERE community_id = '{community_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, community_uuid)))
+                                cursor.execute("UPDATE community_stats SET views_last_month = %s WHERE community_id = %s", (community_views, community_uuid))
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_academic_year = {community_views} WHERE community_id = '{community_uuid}'"))
-                                cursor.execute(f"UPDATE community_stats SET views_academic_year = {community_views} WHERE community_id = '{community_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, community_uuid)))
+                                cursor.execute("UPDATE community_stats SET views_academic_year = %s WHERE community_id = %s", (community_views, community_uuid))
                             else:
-                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_total = {community_views} WHERE community_id = '{community_uuid}'"))
-                                cursor.execute(f"UPDATE community_stats SET views_total = {community_views} WHERE community_id = '{community_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, community_uuid)))
+                                cursor.execute("UPDATE community_stats SET views_total = %s WHERE community_id = %s", (community_views, community_uuid))
                         else:
                             self.logger.warning("owningComm value is not a UUID: %s",
                                                 community_uuid)
@@ -351,14 +351,14 @@ class CommunityIndexer(Indexer):
                     for community_uuid, community_downloads in downloads["owningComm"].items():
                         if len(community_uuid) == 36:
                             if time_period == 'month':
-                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_last_month = {community_downloads} WHERE community_id = '{community_uuid}'"))
-                                cursor.execute(f"UPDATE community_stats SET downloads_last_month = {community_downloads} WHERE community_id = '{community_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, community_downloads)))
+                                cursor.execute("UPDATE community_stats SET downloads_last_month = %s WHERE community_id = %s", (community_downloads, community_downloads))
                             elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_academic_year = {community_downloads} WHERE community_id ='{community_uuid}'"))
-                                cursor.execute(f"UPDATE community_stats SET downloads_academic_year = {community_downloads} WHERE community_id = '{community_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, community_downloads)))
+                                cursor.execute("UPDATE community_stats SET downloads_academic_year = %s WHERE community_id = %s", (community_downloads, community_downloads))
                             else:
-                                self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_total = {community_downloads} WHERE community_id = '{community_uuid}'"))
-                                cursor.execute(f"UPDATE community_stats SET downloads_total = {community_downloads} WHERE community_id = '{community_uuid}'")
+                                self.logger.debug(cursor.mogrify("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, community_downloads)))
+                                cursor.execute("UPDATE community_stats SET downloads_total = %s WHERE community_id = %s", (community_downloads, community_downloads))
                         else:
                             self.logger.warning("owningComm value is not a UUID: %s",
                                                 community_uuid)
