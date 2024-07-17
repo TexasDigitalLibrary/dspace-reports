@@ -110,7 +110,8 @@ class ItemIndexer(Indexer):
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                          f"time:[{date_start} TO {date_end}]")
         else:
             self.logger.error("Error creating date range.")
 
@@ -162,11 +163,12 @@ class ItemIndexer(Indexer):
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
-                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                            solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                                      f"time:[{date_start} TO {date_end}]")
 
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr item views query: %s", response.url)
- 
+
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
                     # Iterate over the facetField dict and get the UUIDs and views
@@ -228,7 +230,8 @@ class ItemIndexer(Indexer):
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                          f"time:[{date_start} TO {date_end}]")
         else:
             self.logger.error("Error creating date range.")
 
@@ -275,11 +278,13 @@ class ItemIndexer(Indexer):
                     }
 
                     if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
+                        self.logger.info("Searching date range: %s - %s",
+                                         date_range[0], date_range[1])
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
-                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                            solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                                      f"time:[{date_start} TO {date_end}]")
 
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr item downloads query: %s", response.url)

@@ -78,7 +78,8 @@ class DSpaceRestApi():
             self.logger.info(login_response.cookies)
 
             if 'Authorization' in login_response.headers:
-                self.session.headers.update({'Authorization': login_response.headers.get('Authorization')})
+                self.session.headers.update(
+                    {'Authorization': login_response.headers.get('Authorization')})
 
             return True
 

@@ -151,7 +151,8 @@ class RunReports():
             return False
 
         # Combine CSV files into single Excel file
-        output_file_path = self.output_dir + datetime.now().strftime('dspace-reports_%Y-%m-%d_%H-%M-%S.xlsx')
+        output_file_path = (self.output_dir +
+                            datetime.now().strftime('dspace-reports_%Y-%m-%d_%H-%M-%S.xlsx'))
         excel_report_file = self.output.save_report_excel_file(
             output_file_path=output_file_path, worksheet_files=csv_report_files)
         if excel_report_file:
@@ -170,7 +171,8 @@ class RunReports():
             return False
 
         # Create ZIP archvie with the Excel file
-        output_file_path = self.output_dir + datetime.now().strftime('dspace-reports_%Y-%m-%d_%H-%M-%S.zip')
+        output_file_path = (self.output_dir +
+                            datetime.now().strftime('dspace-reports_%Y-%m-%d_%H-%M-%S.zip'))
         zip_report_archive = self.output.save_report_zip_archive(output_file_path=output_file_path,
                                                                  excel_report_file=excel_report_file
                                                                  )

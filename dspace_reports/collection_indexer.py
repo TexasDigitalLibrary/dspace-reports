@@ -49,7 +49,8 @@ class CollectionIndexer(Indexer):
             for time_period in self.time_periods:
                 self.logger.info("Indexing items for collection: %s (%s)", collection_name,
                                  collection_uuid)
-                self.index_collection_items(collection_uuid=collection_uuid, time_period=time_period)
+                self.index_collection_items(collection_uuid=collection_uuid,
+                                            time_period=time_period)
 
         # Index all views and downloads of collections
         for time_period in self.time_periods:
@@ -158,7 +159,8 @@ class CollectionIndexer(Indexer):
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                          f"time:[{date_start} TO {date_end}]")
         else:
             self.logger.error("Error creating date range.")
 
@@ -205,11 +207,13 @@ class CollectionIndexer(Indexer):
                     }
 
                     if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
+                        self.logger.info("Searching date range: %s - %s",
+                                         date_range[0], date_range[1])
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
-                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                            solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                                      f"time:[{date_start} TO {date_end}]")
 
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr collection views query: %s", response.url)
@@ -273,7 +277,8 @@ class CollectionIndexer(Indexer):
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                          f"time:[{date_start} TO {date_end}]")
         else:
             self.logger.error("Error creating date range.")
 
@@ -325,7 +330,8 @@ class CollectionIndexer(Indexer):
                         if date_range[0] is not None and date_range[1] is not None:
                             date_start = date_range[0]
                             date_end = date_range[1]
-                            solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                            solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                                      f"time:[{date_start} TO {date_end}]")
 
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr collection downloads query: %s", response.url)

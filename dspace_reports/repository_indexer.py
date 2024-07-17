@@ -45,7 +45,8 @@ class RepositoryIndexer(Indexer):
             self.index_repository_views(repository_uuid=repository_uuid, time_period=time_period)
 
             self.logger.info("Indexing repository downloads.")
-            self.index_repository_downloads(repository_uuid=repository_uuid, time_period=time_period)
+            self.index_repository_downloads(repository_uuid=repository_uuid,
+                                            time_period=time_period)
 
     def index_repository_items(self, repository_uuid=None, time_period=None):
         """Index repository items"""
@@ -134,7 +135,8 @@ class RepositoryIndexer(Indexer):
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                          f"time:[{date_start} TO {date_end}]")
         else:
             self.logger.error("Error creating date range.")
 
@@ -200,7 +202,8 @@ class RepositoryIndexer(Indexer):
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = solr_query_params['q'] + " AND " + f"time:[{date_start} TO {date_end}]"
+                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
+                                          f"time:[{date_start} TO {date_end}]")
         else:
             self.logger.error("Error creating date range.")
 
