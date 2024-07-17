@@ -54,8 +54,8 @@ class CommunityIndexer(Indexer):
          # Insert the community into the database
         with Database(self.config['statistics_db']) as db:
             with db.cursor() as cursor:
-                self.logger.debug(cursor.mogrify(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ({community_uuid}, {community_name}, {community_url}, {parent_community_name})"))
-                cursor.execute(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ({community_uuid}, {community_name}, {community_url}, {parent_community_name})")
+                self.logger.debug(cursor.mogrify(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ('{community_uuid}', '{community_name}', '{community_url}', '{parent_community_name}')"))
+                cursor.execute(f"INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES ('{community_uuid}', '{community_name}', '{community_url}', '{parent_community_name}')")
                 db.commit()
 
         # Index views and downloads for the current community
@@ -233,9 +233,9 @@ class CommunityIndexer(Indexer):
  
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
-                    # iterate over the facetField dict and get the ids and views
+                    # Iterate over the facetField dict and get the UUIDs and views
                     for community_uuid, community_views in views["owningComm"].items():
-                        if len(id) == 36:
+                        if len(community_uuid) == 36:
                             if time_period == 'month':
                                 self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_last_month = {community_views} WHERE community_id = '{community_uuid}'"))
                                 cursor.execute(f"UPDATE community_stats SET views_last_month = {community_views} WHERE community_id = '{community_uuid}'")
@@ -246,7 +246,8 @@ class CommunityIndexer(Indexer):
                                 self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET views_total = {community_views} WHERE community_id = '{community_uuid}'"))
                                 cursor.execute(f"UPDATE community_stats SET views_total = {community_views} WHERE community_id = '{community_uuid}'")
                         else:
-                            self.logger.warning("owningComm value is not a UUID: %s", id)
+                            self.logger.warning("owningComm value is not a UUID: %s",
+                                                community_uuid)
 
                     # Commit changes to database
                     db.commit()
@@ -346,9 +347,9 @@ class CommunityIndexer(Indexer):
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
-                    # iterate over the facetField dict and get the ids and views
+                    # Iterate over the facetField dict and get the UUIDs and downloads
                     for community_uuid, community_downloads in downloads["owningComm"].items():
-                        if len(id) == 36:
+                        if len(community_uuid) == 36:
                             if time_period == 'month':
                                 self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_last_month = {community_downloads} WHERE community_id = '{community_uuid}'"))
                                 cursor.execute(f"UPDATE community_stats SET downloads_last_month = {community_downloads} WHERE community_id = '{community_uuid}'")
@@ -359,7 +360,8 @@ class CommunityIndexer(Indexer):
                                 self.logger.debug(cursor.mogrify(f"UPDATE community_stats SET downloads_total = {community_downloads} WHERE community_id = '{community_uuid}'"))
                                 cursor.execute(f"UPDATE community_stats SET downloads_total = {community_downloads} WHERE community_id = '{community_uuid}'")
                         else:
-                            self.logger.warning("owningComm value is not a UUID: %s", id)
+                            self.logger.warning("owningComm value is not a UUID: %s",
+                                                community_uuid)
 
                     # Commit changes to database
                     db.commit()

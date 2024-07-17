@@ -173,17 +173,21 @@ class ItemIndexer(Indexer):
  
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
-                    # iterate over the facetField dict and get the ids and views
-                    for item_id, item_views in views["id"].items():
-                        if time_period == 'month':
-                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_id}'"))
-                            cursor.execute(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_id}'")
-                        elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_id}'"))
-                            cursor.execute(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_id}'")
+                    # Iterate over the facetField dict and get the UUIDs and views
+                    for item_uuid, item_views in views["id"].items():
+                        if len(item_uuid) == 36:
+                            if time_period == 'month':
+                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_uuid}'"))
+                                cursor.execute(f"UPDATE item_stats SET views_last_month = {item_views} WHERE item_id = '{item_uuid}'")
+                            elif time_period == 'year':
+                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_uuid}'"))
+                                cursor.execute(f"UPDATE item_stats SET views_academic_year = {item_views} WHERE item_id = '{item_uuid}'")
+                            else:
+                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_uuid}'"))
+                                cursor.execute(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_uuid}'")
                         else:
-                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_id}'"))
-                            cursor.execute(f"UPDATE item_stats SET views_total = {item_views} WHERE item_id = '{item_id}'")
+                            self.logger.warning("Item ID value is not a UUID: %s",
+                                                item_uuid)
 
                     # Commit changes to database
                     db.commit()
@@ -286,18 +290,22 @@ class ItemIndexer(Indexer):
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     downloads = response.json()["facet_counts"]["facet_fields"]
-                    # iterate over the facetField dict and get the ids and views
-                    for item_id, item_downloads in downloads["owningItem"].items():
-                        if time_period == 'month':
-                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_id}'"))
-                            cursor.execute(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_id}'")
-                        elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_id}'"))
-                            cursor.execute(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_id}'")
+                    # Iterate over the facetField dict and get the UUIDs and downloads
+                    for item_uuid, item_downloads in downloads["owningItem"].items():
+                        if len(item_uuid) == 36:
+                            if time_period == 'month':
+                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_uuid}'"))
+                                cursor.execute(f"UPDATE item_stats SET downloads_last_month = {item_downloads} WHERE item_id = '{item_uuid}'")
+                            elif time_period == 'year':
+                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_uuid}'"))
+                                cursor.execute(f"UPDATE item_stats SET downloads_academic_year = {item_downloads} WHERE item_id = '{item_uuid}'")
+                            else:
+                                self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_uuid}'"))
+                                cursor.execute(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_uuid}'")
                         else:
-                            self.logger.debug(cursor.mogrify(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_id}'"))
-                            cursor.execute(f"UPDATE item_stats SET downloads_total = {item_downloads} WHERE item_id = '{item_id}'")
-            
+                            self.logger.warning("Item ID value is not a UUID: %s",
+                                                item_uuid)
+
                     # Commit changes to database
                     db.commit()
 

@@ -215,17 +215,21 @@ class CollectionIndexer(Indexer):
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
-                    # Iterate over the facetField dict and get the ids and views
+                    # Iterate over the facetField dict and get the UUIDs and views
                     for collection_uuid, collection_views in views["owningColl"].items():
-                        if time_period == 'month':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'"))
-                            cursor.execute(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'")
-                        elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'"))
-                            cursor.execute(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'")
+                        if len(collection_uuid) == 36:
+                            if time_period == 'month':
+                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'"))
+                                cursor.execute(f"UPDATE collection_stats SET views_last_month = {collection_views} WHERE collection_id = '{collection_uuid}'")
+                            elif time_period == 'year':
+                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'"))
+                                cursor.execute(f"UPDATE collection_stats SET views_academic_year = {collection_views} WHERE collection_id = '{collection_uuid}'")
+                            else:
+                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'"))
+                                cursor.execute(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'")
                         else:
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'"))
-                            cursor.execute(f"UPDATE collection_stats SET views_total = {collection_views} WHERE collection_id = '{collection_uuid}'")
+                            self.logger.warning("owningColl value is not a UUID: %s",
+                                                collection_uuid)
 
                     # Commit changes to database
                     db.commit()
@@ -329,15 +333,19 @@ class CollectionIndexer(Indexer):
                     downloads = response.json()["facet_counts"]["facet_fields"]
                     # Iterate over the facetField dict and get the ids and views
                     for collection_uuid, collection_downloads in downloads["owningColl"].items():
-                        if time_period == 'month':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
-                            cursor.execute(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
-                        elif time_period == 'year':
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
-                            cursor.execute(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}")
+                        if len(collection_uuid) == 36:
+                            if time_period == 'month':
+                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
+                                cursor.execute(f"UPDATE collection_stats SET downloads_last_month = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
+                            elif time_period == 'year':
+                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
+                                cursor.execute(f"UPDATE collection_stats SET downloads_academic_year = {collection_downloads} WHERE collection_id = '{collection_uuid}")
+                            else:
+                                self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
+                                cursor.execute(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
                         else:
-                            self.logger.debug(cursor.mogrify(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'"))
-                            cursor.execute(f"UPDATE collection_stats SET downloads_total = {collection_downloads} WHERE collection_id = '{collection_uuid}'")
+                            self.logger.warning("owningColl value is not a UUID: %s",
+                                                collection_uuid)
 
                     # Commit changes to database
                     db.commit()
