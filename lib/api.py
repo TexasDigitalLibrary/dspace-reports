@@ -144,7 +144,7 @@ class DSpaceRestApi():
             return response.json()
 
         # Log errors
-        if response.status_code >= 400 and response.status_code <= 500:
+        if response.status_code >= 400 and response.status_code < 600:
             self.logger.error("Error while making rest call, (HTTP code: %s) %s",
                                 response.status_code, response.text)
 
