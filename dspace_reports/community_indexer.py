@@ -36,7 +36,8 @@ class CommunityIndexer(Indexer):
                 parent_community_name = parent_community['name']
 
             if len(community_name) > 255:
-                self.logger.debug("Community name is longer than 255 characters. It will be shortened to that length.")
+                self.logger.debug("Community name is longer than 255 characters. " +
+                                  "It will be shortened to that length.")
                 community_name = community_name[0:251] + "..."
 
             # Insert the community into the database

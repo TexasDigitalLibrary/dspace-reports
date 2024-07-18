@@ -1,6 +1,6 @@
 # dspace-reports
 
-A python3-based tool to generate and email statistical reports for [DSpace 7.x](https://github.com/DSpace/DSpace) repository administrators.
+A tool written in Python to generate and email statistical reports for [DSpace 7.x](https://github.com/DSpace/DSpace) repository administrators.
 
 ## Requirements
 

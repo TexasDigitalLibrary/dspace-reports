@@ -36,7 +36,8 @@ class CollectionIndexer(Indexer):
                 parent_community_name = parent_community['name']
 
             if len(collection_name) > 255:
-                self.logger.debug("Collection name is longer than 255 characters. It will be shortened to that length.")
+                self.logger.debug("Collection name is longer than 255 characters. " +
+                                  "It will be shortened to that length.")
                 collection_name = collection_name[0:251] + "..."
 
             # Insert the collection into the database
