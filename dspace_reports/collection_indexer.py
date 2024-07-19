@@ -188,7 +188,8 @@ class CollectionIndexer(Indexer):
             with db.cursor() as cursor:
                 while results_current_page <= results_num_pages:
                     print(
-                        f"Indexing collection views (page {results_current_page + 1} of {results_num_pages + 1})"
+                        f"Indexing collection views (page {results_current_page + 1} " +
+                        f"of {results_num_pages + 1})"
                     )
 
                     # Solr params for current page
@@ -306,7 +307,8 @@ class CollectionIndexer(Indexer):
                 while results_current_page <= results_num_pages:
                     # "pages" are zero based, but one based is more human readable
                     print(
-                        f"Indexing collection downloads (page {results_current_page + 1} of {results_num_pages + 1})"
+                        f"Indexing collection downloads (page {results_current_page + 1} " +
+                        f"of {results_num_pages + 1})"
                     )
 
                     # Solr params for current page

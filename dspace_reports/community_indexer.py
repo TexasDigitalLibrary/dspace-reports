@@ -192,7 +192,8 @@ class CommunityIndexer(Indexer):
             with db.cursor() as cursor:
                 while results_current_page <= results_num_pages:
                     print(
-                        f"Indexing community views (page {results_current_page + 1} of {results_num_pages + 1})"
+                        f"Indexing community views (page {results_current_page + 1} " +
+                        f"of {results_num_pages + 1})"
                     )
 
                     # Solr params for current page
@@ -222,7 +223,7 @@ class CommunityIndexer(Indexer):
 
                     response = self.solr.call(url=solr_url, params=solr_query_params)
                     self.logger.info("Solr community views query: %s", response.url)
- 
+
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
                     views = response.json()["facet_counts"]["facet_fields"]
                     # Iterate over the facetField dict and get the UUIDs and views
@@ -309,7 +310,8 @@ class CommunityIndexer(Indexer):
                 while results_current_page <= results_num_pages:
                     # "pages" are zero based, but one based is more human readable
                     print(
-                        f"Indexing community downloads (page {results_current_page + 1} of {results_num_pages + 1})"
+                        f"Indexing community downloads (page {results_current_page + 1} " +
+                        f"of {results_num_pages + 1})"
                     )
 
                     # Solr params for current page
