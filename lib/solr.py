@@ -15,8 +15,8 @@ class DSpaceSolr():
         else:
             self.solr_server = solr_server
 
-        # Timeout for requests to Solr
-        self.timeout = 5
+        # Timeout in seconds for requests to Solr
+        self.timeout = 120
 
         # Create session
         self.session = requests.Session()
@@ -68,11 +68,17 @@ class DSpaceSolr():
             params = {}
 
         if call_type == 'POST':
-            response = self.session.post(url, params=params, headers=self.request_headers,
-                                        timeout=self.timeout)
+            try:
+                response = self.session.post(url, params=params, headers=self.request_headers,
+                                            timeout=self.timeout)
+            except requests.exceptions.Timeout:
+                self.logger.error("Call to Solr timed out after %s seconds.", str(self.timeout))
         else:
-            response = self.session.get(url, params=params,headers=self.request_headers,
-                                        timeout=self.timeout)
+            try:
+                response = self.session.get(url, params=params,headers=self.request_headers,
+                                            timeout=self.timeout)
+            except requests.exceptions.Timeout:
+                self.logger.error("Call to Solr timed out after %s seconds.", str(self.timeout))
 
         return response
 
