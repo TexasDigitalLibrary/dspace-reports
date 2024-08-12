@@ -1,13 +1,16 @@
+"""Class for indexing item statistics"""
+
+import argparse
 import logging
 import sys
-
-from optparse import OptionParser
 
 from lib.util import Utilities
 from dspace_reports.item_indexer import ItemIndexer
 
 
 class RunItemIndexer():
+    """Class for indexing item statistics"""
+
     def __init__(self, config=None, logger=None):
         if config is None:
             print("ERROR: A configuration file required to create the stats indexer.")
@@ -23,32 +26,40 @@ class RunItemIndexer():
             self.logger = logging.getLogger('dspace-reports')
 
     def run(self):
+        """Function to run item indexer"""
+
         # Create items stats indexer
         item_indexer = ItemIndexer(config=self.config, logger=self.logger)
-        
+
         # Index items stats from Solr
         item_indexer.index()
 
 
 def main():
-    parser = OptionParser()
+    """Main function"""
 
-    parser.add_option("-c", "--config", dest="config_file", default="config/application.yml", help="Configuration file")
-    parser.add_option("-o", "--output_dir", dest="output_dir", help="Directory for results files.")
+    parser = argparse.ArgumentParser(
+                    prog='Database Manager',
+                    description='Commands to manage statistics database tables')
 
-    (options, args) = parser.parse_args()
+    parser.add_argument("-c", "--config", dest="config_file", action='store', type=str,
+                        default="config/application.yml", help="Configuration file")
+    parser.add_argument("-o", "--output_dir", dest="output_dir", action='store', type=str,
+                        help="Directory for results files.")
+
+    args = parser.parse_args()
 
     # Create utilities object
     utilities = Utilities()
 
     # Check required options fields
-    if options.output_dir is None:
+    if args.output_dir is None:
         parser.print_help()
         parser.error("Must specify an output directory.")
 
     # Load config
-    print("Loading configuration from file: %s", options.config_file)
-    config = utilities.load_config(options.config_file)
+    print("Loading configuration from file: %s", args.config_file)
+    config = utilities.load_config(args.config_file)
     if not config:
         print("ERROR: Unable to load configuration.")
         sys.exit(1)
@@ -62,7 +73,7 @@ def main():
         work_dir = work_dir + '/'
 
     # Ensure output_dir has trailing slash
-    output_dir = options.output_dir
+    output_dir = args.output_dir
     if output_dir[len(output_dir)-1] != '/':
         output_dir = output_dir + '/'
 
@@ -74,10 +85,9 @@ def main():
 
     # Create stats indexer
     indexer = RunItemIndexer(config=config, logger=logger)
-    
+
     # Get item statistics from Solr
     indexer.run()
-
 
 if __name__ == "__main__":
     main()

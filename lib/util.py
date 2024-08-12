@@ -1,14 +1,20 @@
+"""Utilities class"""
+
 import logging
 import os
 import yaml
 
 
-class Utilities(object):
+class Utilities():
+    """Utilities class"""
+
     def load_config(self, config_file=None):
+        """Load logging configuration"""
+
         if config_file is None:
             print("Must specify a configuration file.")
             return False
-        
+
         config = {}
         path = config_file
 
@@ -16,12 +22,14 @@ class Utilities(object):
             print("Configuration file is missing.")
             return False
 
-        with open(config_file, 'r') as f:
+        with open(config_file, 'r', encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         return config
 
     def load_logger(self, config=None):
+        """Load application logger"""
+
         if config is None:
             print("No configuration given, cannot create logger.")
             return False
@@ -32,10 +40,10 @@ class Utilities(object):
             log_path = log_path + '/'
 
         log_file = config['log_file'] or 'dspace-reports.log'
-        
+
         log_level_string = config['log_level']
-        print("Creating logger with log level: %s" % log_level_string)
-        
+        print("Creating logger with log level: %s", log_level_string)
+
         if log_level_string == 'INFO':
             log_level = logging.INFO
         elif log_level_string == 'DEBUG':
@@ -52,7 +60,7 @@ class Utilities(object):
         logger.setLevel(log_level)
         log_formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s")
 
-        file_handler = logging.FileHandler("{0}/{1}".format(log_path, log_file))
+        file_handler = logging.FileHandler(f"{log_path}/{log_file}")
         file_handler.setFormatter(log_formatter)
         file_handler.setLevel(log_level)
         logger.addHandler(file_handler)
@@ -65,6 +73,8 @@ class Utilities(object):
         return logger
 
     def ensure_directory_exists(self, output_file_path=None):
+        """Ensure directory exists"""
+
         if output_file_path is None:
             print("Must specify an output file.")
             return False
@@ -73,16 +83,16 @@ class Utilities(object):
 
         if os.path.isdir(directory) and os.path.exists(directory):
             return True
-        else:
-            os.mkdir(directory)
-            return True
+
+        os.mkdir(directory)
+        return True
 
     def check_file_exists(self, file_path=None):
+        """Check if file exists"""
+
         if file_path is None:
             print("Must specify a file path.")
             return False
 
-        if os.path.isfile(file_path):
-            return True
-        else:
-            return False
+        is_file = os.path.isfile(file_path)
+        return is_file

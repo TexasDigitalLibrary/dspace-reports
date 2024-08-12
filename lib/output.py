@@ -1,15 +1,17 @@
-import os
+"""Class for saving stats reports to CSV and Excel files"""
+
 import csv
+import os
 import logging
 import shutil
-import xlsxwriter
-
 from zipfile import ZIP_DEFLATED, ZipFile
-
+import xlsxwriter
 from lib.util import Utilities
 
 
-class Output(object):
+class Output():
+    """Class for saving stats reports to CSV and Excel files"""
+
     def __init__(self, config=None):
         self.config = config
         self.logger = logging.getLogger('dataverse-reports')
@@ -20,7 +22,15 @@ class Output(object):
         if self.work_dir[len(self.work_dir)-1] != '/':
             self.work_dir = self.work_dir + '/'
 
-    def save_report_csv_file(self, output_file_path=None, headers=[], data=[]):
+    def save_report_csv_file(self, output_file_path=None, headers=None, data=None):
+        """Save stats report to CSV file"""
+
+        if headers is None:
+            headers = []
+
+        if data is None:
+            data = []
+
         # Sanity checks
         if output_file_path is None:
             self.logger.error("Output file path is required.")
@@ -37,7 +47,8 @@ class Output(object):
             headers.remove("repository_id")
 
         with open(output_file_path, 'w', newline='', encoding='utf-8') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=headers, extrasaction='ignore', dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(csvfile, fieldnames=headers, extrasaction='ignore',
+                                    dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             for result in data:
                 writer.writerow(result)
@@ -45,7 +56,10 @@ class Output(object):
         self.logger.info("Saved report to CSV file %s.", output_file_path)
         return output_file_path
 
-    def update_header_report_csv_file(self, input_file_path=None, headers_old=None, headers_new=None):
+    def update_header_report_csv_file(self, input_file_path=None, headers_old=None, 
+                                      headers_new=None):
+        """Update headers of CSV file"""
+
         # Sanity checks
         if input_file_path is None:
             self.logger.error("Input file path is required.")
@@ -62,10 +76,10 @@ class Output(object):
 
         temp_csv_file_path = self.work_dir + 'temp.csv'
 
-        with open(input_file_path, 'r') as fp:
+        with open(input_file_path, 'r', encoding="utf-8") as fp:
             reader = csv.DictReader(fp, fieldnames=headers_new)
 
-            with open(temp_csv_file_path, 'w', newline='') as fh:
+            with open(temp_csv_file_path, 'w', newline='', encoding="utf-8") as fh:
                 writer = csv.DictWriter(fh, fieldnames=reader.fieldnames)
                 writer.writeheader()
                 header_mapping = next(reader)
@@ -75,7 +89,12 @@ class Output(object):
         destination_file_path = shutil.copyfile(temp_csv_file_path, input_file_path)
         return destination_file_path
 
-    def save_report_excel_file(self, output_file_path=None, worksheet_files=[]):
+    def save_report_excel_file(self, output_file_path=None, worksheet_files=None):
+        """"Save stats report to Excel file"""
+
+        if worksheet_files is None:
+            worksheet_files = []
+
         # Sanity checks
         if output_file_path is None:
             self.logger.error("Output file path is required.")
@@ -116,6 +135,8 @@ class Output(object):
         return output_file_path
 
     def save_report_zip_archive(self, output_file_path=None, excel_report_file=None):
+        """"Save stats report to zip file"""
+
         # Sanity checks
         if output_file_path is None:
             self.logger.error("Output file path is required.")

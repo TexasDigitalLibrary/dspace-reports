@@ -1,12 +1,12 @@
 # dspace-reports
 
-A python3-based tool to generate and email statistical reports for [DSpace](https://github.com/DSpace/DSpace) repository administrators.
+A tool written in Python to generate and email statistical reports for [DSpace 7+](https://github.com/DSpace/DSpace) repository administrators.
 
 ## Requirements
 
 - Python 3.9+
-- PostgreSQL 9.6+
-- DSpace 6.x repository **
+- PostgreSQL 13+
+- DSpace 7.x or 8.x repository **
 
 ** If your Solr index contains statistics from legacy DSpace 5.x or earlier instances, then the quality of the reports will go up significantly if you have migrated the old statistics to the new UUID identifiers in DSpace 6. See the [DSpace Documentation](https://wiki.lyrasis.org/display/DSDOC6x/SOLR+Statistics+Maintenance#SOLRStatisticsMaintenance-UpgradeLegacyDSpaceObjectIdentifiers(pre-6xstatistics)toDSpace6xUUIDIdentifiers) for more information
 
@@ -15,8 +15,8 @@ A python3-based tool to generate and email statistical reports for [DSpace](http
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install pipenv
-pipenv install
+pip install -r requirements.txt
+
 ```
 
 ## Configuration
