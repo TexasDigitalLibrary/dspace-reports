@@ -137,7 +137,7 @@ class CollectionIndexer(Indexer):
         # Default Solr params
         solr_query_params = {
             "q": f"type:2 AND owningColl:/.{{36}}/",
-            "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
+            "fq": "-isBot:true AND statistics_type:view",
             "fl": "owningColl",
             "facet": "true",
             "facet.field": "owningColl",
@@ -195,7 +195,7 @@ class CollectionIndexer(Indexer):
                     # Solr params for current page
                     solr_query_params = {
                         "q": f"type:2 AND owningColl:/.{{36}}/",
-                        "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
+                        "fq": "-isBot:true AND statistics_type:view",
                         "fl": "owningColl",
                         "facet": "true",
                         "facet.field": "owningColl",
