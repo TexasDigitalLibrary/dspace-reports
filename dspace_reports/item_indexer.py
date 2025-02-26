@@ -38,6 +38,8 @@ class ItemIndexer(Indexer):
                     item_uuid = item['uuid']
                     item_name = item['name']
 
+                    self.logger.info("Item : %s (%s)", item_name, item_uuid)
+
                     # Attempt to get collection name
                     item_owning_collection_name = "Unknown"
                     item_owning_collection = self.rest.get_item_owning_collection(
@@ -61,8 +63,29 @@ class ItemIndexer(Indexer):
                     else:
                         item_name = "Untitled"
 
-                    # Create handle URL for item
-                    item_url = self.base_url + item['handle']
+                    # Create Handle URL for item
+                    item_url = ''
+                    self.logger.debug(item)
+                    if 'handle' in item and item['handle'] is not None:
+                        item_url = self.base_url + item['handle']
+                    else:
+                        self.logger.warning("Item is missing a handle.")
+                        self.logger.debug(item)
+                        if 'metadata' in item:
+                            metadata = item['metadata']
+                            if 'dc.identifier.uri' in metadata:
+                                self.logger.debug("The dc.identifier.uri key is in the metadata.")
+                                item_url_metadata = metadata['dc.identifier.uri'][0]
+                                if 'value' in item_url_metadata:
+                                    item_url = item_url_metadata['value']
+                            else:
+                                self.logger.debug("The dc.identifier.uri key is not in the metadata")
+
+                    if len(item_url) == 0:
+                        self.logger.warning("The item URL is empty.")
+                        item_url = "Unable to find handle/URL"
+
+                    self.logger.debug("Item URL: %s", item_url)
 
                     self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url)))
                     cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url))
