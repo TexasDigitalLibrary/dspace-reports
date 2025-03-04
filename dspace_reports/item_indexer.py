@@ -65,12 +65,10 @@ class ItemIndexer(Indexer):
 
                     # Create Handle URL for item
                     item_url = ''
-                    self.logger.debug(item)
                     if 'handle' in item and item['handle'] is not None:
                         item_url = self.base_url + item['handle']
                     else:
                         self.logger.warning("Item is missing a handle.")
-                        self.logger.debug(item)
                         if 'metadata' in item:
                             metadata = item['metadata']
                             if 'dc.identifier.uri' in metadata:
@@ -87,7 +85,6 @@ class ItemIndexer(Indexer):
 
                     self.logger.debug("Item URL: %s", item_url)
 
-                    self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url)))
                     cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url))
                     db.commit()
 
