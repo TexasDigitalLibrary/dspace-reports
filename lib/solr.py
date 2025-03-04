@@ -16,7 +16,7 @@ class DSpaceSolr():
             self.solr_server = solr_server
 
         # Timeout in seconds for requests to Solr
-        self.timeout = 120
+        self.timeout = 180
 
         # Create session
         self.session = requests.Session()
