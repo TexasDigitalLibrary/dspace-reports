@@ -137,7 +137,7 @@ class CommunityIndexer(Indexer):
 
         # Default Solr params
         solr_query_params = {
-            "q": f"type:0 AND owningComm:/.{{36}}/",
+            "q": f"type:2 AND owningComm:/.{{36}}/",
             "fq": "-isBot:true AND statistics_type:view",
             "fl": "owningComm",
             "facet": "true",
