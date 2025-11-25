@@ -1,19 +1,21 @@
 dspace_name: 'MyDSpace'
 dspace_server: 'http://localhost:8080'
-solr_server: 'http://localhost:8080/solr'
 oai_server: 'http://localhost:8080/oai'
 rest_server: 
     url: 'https://dspace.org/rest'
     username: 'admin@example.org'
     password: 'password'
-statistics_db:
+database:
     host: 'localhost'
     port: '5432'
     name: 'dspace_statistics'
     username: 'dspace_statistics'
     password: 'dspace_statistics'
+solr:
+    url: 'http://localhost:8983/solr'
+    connection_timeout: 300
 work_dir: '/tmp'
-delay: 0
+crawl_delay: 0
 create_zip_archive: false
 log_path: 'logs'
 log_file: 'statistics-reports.log'

@@ -29,7 +29,7 @@ class ItemIndexer(Indexer):
         count_items = 0
 
         # Iterate over records and call REST API for additional metadata
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 for item in items:
                     count_items += 1
@@ -98,9 +98,6 @@ class ItemIndexer(Indexer):
     def index_item_views(self, time_period='all'):
         """Index the item views"""
 
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
-
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
 
@@ -136,7 +133,7 @@ class ItemIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for total views statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Solr total item views query: %s", response.url)
 
         try:
@@ -153,7 +150,7 @@ class ItemIndexer(Indexer):
         results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
 
                 while results_current_page <= results_num_pages:
@@ -187,7 +184,7 @@ class ItemIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr item views query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
@@ -218,9 +215,6 @@ class ItemIndexer(Indexer):
 
     def index_item_downloads(self, time_period='all'):
         """Index the item downloads"""
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
@@ -257,7 +251,7 @@ class ItemIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for download statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Solr total item downloads query: %s", response.url)
 
         try:
@@ -273,7 +267,7 @@ class ItemIndexer(Indexer):
         results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
 
                 while results_current_page <= results_num_pages:
@@ -308,7 +302,7 @@ class ItemIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr item downloads query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)

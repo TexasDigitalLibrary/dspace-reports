@@ -29,7 +29,7 @@ class RepositoryIndexer(Indexer):
 
         self.logger.info("Indexing Repository: %s (UUID: %s)", repository_name, repository_uuid)
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 self.logger.debug(cursor.mogrify("INSERT INTO repository_stats (repository_id, repository_name) VALUES (%s, %s)", (repository_uuid, repository_name)))
                 cursor.execute("INSERT INTO repository_stats (repository_id, repository_name) VALUES (%s, %s)", (repository_uuid, repository_name))
@@ -54,10 +54,6 @@ class RepositoryIndexer(Indexer):
         if repository_uuid is None or time_period is None:
             return
 
-        # Create base Solr URL
-        solr_url = self.solr_server + "/search/select"
-        self.logger.debug("Solr_URL: %s", solr_url)
-
         # Default Solr params
         solr_query_params = {
             "q": "search.resourcetype:Item",
@@ -79,7 +75,7 @@ class RepositoryIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for items statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.call(path=self.solr_search_path, params=solr_query_params)
         self.logger.info("Calling Solr total items in repository: %s", response.url)
 
         results_total_items = 0
@@ -91,7 +87,7 @@ class RepositoryIndexer(Indexer):
             self.logger.info("No items to index, returning.")
             return
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET items_last_month = %s WHERE repository_id = %s", (results_total_items, repository_uuid)))
@@ -111,9 +107,6 @@ class RepositoryIndexer(Indexer):
 
         if repository_uuid is None or time_period is None:
             return
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
@@ -141,7 +134,7 @@ class RepositoryIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for views statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.call(path=self.solr_statistics_path, params=solr_query_params)
         self.logger.info("Calling Solr total item views in repository: %s", response.url)
 
         results_num_found = 0
@@ -155,7 +148,7 @@ class RepositoryIndexer(Indexer):
 
         self.logger.info("Total repository item views: %s", str(results_num_found))
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 self.logger.info("Setting repository views stats with %s views for time period: %s",
                                  str(results_num_found), time_period)
@@ -181,9 +174,6 @@ class RepositoryIndexer(Indexer):
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
 
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
-
         # Default Solr params
         solr_query_params = {
             "q": "type:0",
@@ -208,7 +198,7 @@ class RepositoryIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for views statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.call(path=self.solr_statistics_path, params=solr_query_params)
         self.logger.info("Calling Solr total item downloads in repository: %s", response.url)
 
         results_num_found = 0
@@ -222,7 +212,7 @@ class RepositoryIndexer(Indexer):
 
         self.logger.info("Total repository item downloads: %s", str(results_num_found))
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
                     self.logger.debug(cursor.mogrify("UPDATE repository_stats SET downloads_last_month = downloads_last_month + %s WHERE repository_id = %s", (results_num_found, repository_uuid)))

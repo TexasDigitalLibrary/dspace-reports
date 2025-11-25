@@ -41,7 +41,7 @@ class CommunityIndexer(Indexer):
                 community_name = community_name[0:251] + "..."
 
             # Insert the community into the database
-            with Database(self.config['statistics_db']) as db:
+            with Database(self.config['database']) as db:
                 with db.cursor() as cursor:
                     self.logger.debug(cursor.mogrify("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name)))
                     cursor.execute("INSERT INTO community_stats (community_id, community_name, community_url, parent_community_name) VALUES (%s, %s, %s, %s)", (community_uuid, community_name, community_url, parent_community_name))
@@ -67,10 +67,6 @@ class CommunityIndexer(Indexer):
 
         if community_uuid is None or time_period is None:
             return None
-
-        # Create base Solr URL
-        solr_url = self.solr_server + "/search/select"
-        self.logger.debug("Solr_URL: %s", solr_url)
 
         # Default Solr params
         solr_query_params = {
@@ -99,7 +95,7 @@ class CommunityIndexer(Indexer):
         solr_query_params['q'] = solr_query_params['q'] + " AND location.comm:" + community_uuid
 
         # Make call to Solr for items statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_search(params=solr_query_params)
         self.logger.info("Calling Solr items in community: %s", response.url)
 
         results_total_items = 0
@@ -111,7 +107,7 @@ class CommunityIndexer(Indexer):
             self.logger.info("No community items to index.")
             return None
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
                     self.logger.debug(cursor.mogrify("UPDATE community_stats SET items_last_month = %s WHERE community_id = %s", (results_total_items, community_uuid)))
@@ -128,9 +124,6 @@ class CommunityIndexer(Indexer):
 
     def index_community_views(self, time_period=None):
         """Index the community views"""
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
@@ -170,7 +163,7 @@ class CommunityIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for views statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Calling Solr total community views in communities: %s", response.url)
 
         try:
@@ -188,7 +181,7 @@ class CommunityIndexer(Indexer):
         results_current_page = 0
 
         # Update database
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 while results_current_page <= results_num_pages:
                     print(
@@ -221,7 +214,7 @@ class CommunityIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr community views query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
@@ -252,9 +245,6 @@ class CommunityIndexer(Indexer):
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Default Solr params
         solr_query_params = {
@@ -288,7 +278,7 @@ class CommunityIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for downloads statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Calling Solr total community downloads in community: %s", response.url)
 
         try:
@@ -305,7 +295,7 @@ class CommunityIndexer(Indexer):
         results_current_page = 0
 
         # Update database
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 while results_current_page <= results_num_pages:
                     # "pages" are zero based, but one based is more human readable
@@ -339,7 +329,7 @@ class CommunityIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr community downloads query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
