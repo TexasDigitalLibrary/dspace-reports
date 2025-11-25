@@ -19,10 +19,10 @@ class DSpaceSolr():
         self.connection_timeout = self.config['connection_timeout']
 
         # Define Solr search path
-        self.solr_search_path = "/search/select"
+        self.solr_search_path = "search/select"
 
         # Define Solr statistics path
-        self.solr_statistics_path = "/statistics/select"
+        self.solr_statistics_path = "statistics/select"
 
         # Create session
         self.session = requests.Session()
