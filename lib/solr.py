@@ -13,7 +13,7 @@ class DSpaceSolr():
 
         # URL to Solr instance
         solr_url = self.config['url']
-        self.url = self.configure_url(solr_url)
+        self.url = self.configure_solr_url(solr_url)
 
         # Timeout in seconds for requests to Solr
         self.connection_timeout = self.config['connection_timeout']
@@ -32,7 +32,7 @@ class DSpaceSolr():
         self.logger.debug("Connecting to Solr:  %s.", self.url)
         self.test_connection()
 
-    def configure_url(self, url = ''):
+    def configure_solr_url(self, url = ''):
         """Configure Solr URL"""
 
         if (url is None or len(url) == 0):
@@ -58,49 +58,36 @@ class DSpaceSolr():
         self.logger.warning("Solr server connection failed.")
         return None
 
-    def construct_url(self, command, params=None):
+    def construct_url(self, path=None):
         """Create Solr URL"""
-
-        if params is None:
-            params = {}
-
-        parameters = ''
-        first = True
-        for key, value in params.items():
-            if first:
-                parameters += '?' + key + '=' + str(value)
-                first = False
-            else:
-                parameters += '&' + key + '=' + str(value)
-
-        new_url = self.url + command + parameters
-        return new_url
-
-    def call(self, call_type='GET', path=None, params=None):
-        """Make call to Solr server"""
 
         if path is None:
             return None
 
+        return self.url + path
+
+    def call(self, call_type='GET', url=None, params=None):
+        """Make call to Solr server"""
+
+        if url is None:
+            return None
+
         if params is None:
             params = {}
-
-        # Construct URL with Solr URL and the path
-        url = self.url + path
 
         if call_type == 'POST':
             try:
                 response = self.session.post(url, params=params, headers=self.request_headers,
                                             timeout=self.connection_timeout)
             except requests.exceptions.Timeout:
-                self.logger.error("Call to Solr timed out after %s seconds.", 
+                self.logger.error("Call to Solr timed out after %s seconds.",
                                   str(self.connection_timeout))
         else:
             try:
                 response = self.session.get(url, params=params,headers=self.request_headers,
                                             timeout=self.connection_timeout)
             except requests.exceptions.Timeout:
-                self.logger.error("Call to Solr timed out after %s seconds.", 
+                self.logger.error("Call to Solr timed out after %s seconds.",
                                   str(self.connection_timeout))
 
         return response
@@ -108,14 +95,14 @@ class DSpaceSolr():
     def query_search(self, params=None):
         """Query Solr search core"""
 
-        query_search_url = self.url + self.solr_search_path
-        return self.call(path=query_search_url, params=params)
+        query_search_url = self.construct_url(path=self.solr_search_path)
+        return self.call(url=query_search_url, params=params)
 
     def query_statistics(self, params=None):
         """Query Solr statistics core"""
 
-        query_statistics_url = self.url + self.solr_statistics_path
-        return self.call(path=query_statistics_url, params=params)
+        query_statistics_url = self.construct_url(path=self.solr_statistics_path)
+        return self.call(url=query_statistics_url, params=params)
 
     def get_statistics_shards(self):
         """Get Solr shards with statistics"""

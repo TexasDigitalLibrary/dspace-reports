@@ -75,7 +75,7 @@ class RepositoryIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for items statistics
-        response = self.solr.call(path=self.solr_search_path, params=solr_query_params)
+        response = self.solr.query_search(params=solr_query_params)
         self.logger.info("Calling Solr total items in repository: %s", response.url)
 
         results_total_items = 0
