@@ -17,7 +17,7 @@ class ItemIndexer(Indexer):
         self.time_periods = ['month', 'year', 'all']
 
         # Set crawl delay from config
-        self.delay = config['delay']
+        self.crawl_delay = config['crawl_delay']
 
     def index(self):
         # Get list of identifiers from REST API
@@ -208,8 +208,8 @@ class ItemIndexer(Indexer):
                     # Commit changes to database
                     db.commit()
 
-                    if self.delay:
-                        sleep(self.delay)
+                    if self.crawl_delay:
+                        sleep(self.crawl_delay)
 
                     results_current_page += 1
 
@@ -326,7 +326,7 @@ class ItemIndexer(Indexer):
                     # Commit changes to database
                     db.commit()
 
-                    if self.delay:
-                        sleep(self.delay)
+                    if self.crawl_delay:
+                        sleep(self.crawl_delay)
 
                     results_current_page += 1
