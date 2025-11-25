@@ -38,7 +38,7 @@ class DSpaceSolr():
         if (url is None or len(url) == 0):
             return ''
 
-        # Ensure solr_server has trailing slash
+        # Ensure Solr URL has trailing slash
         if url[len(url)-1] != '/':
             return url + '/'
 
@@ -150,12 +150,7 @@ class DSpaceSolr():
 
         if len(statistics_core_years) > 0:
             for core in statistics_core_years:
-                shards += f",{self.solr_server}{core}"
+                shards += f",{self.url}{core}"
 
         self.logger.info("Using these shards to search for statistics: %s", shards)
         return shards
-
-    def get_solr_server(self):
-        """Return reference to Solr server"""
-
-        return self.url

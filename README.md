@@ -30,7 +30,6 @@ cp config/application.yml.sample config/application.yml
 ```yaml
 dspace_name: 'MyDSpace'
 dspace_server: 'http://localhost:8080'
-solr_server: 'http://localhost:8080/solr'
 oai_server: 'http://localhost:8080/oai'
 rest_server: 
     url: 'http://localhost:8080/rest'
@@ -43,9 +42,10 @@ database:
     username: 'dspace_statistics'
     password: 'dspace_statistics'
 solr:
+    url: 'http://localhost:8983/solr'
     connection_timeout: 240
-    crawl_delay: 0
 work_dir: '/tmp'
+crawl_delay: 0
 create_zip_archive: false
 log_path: 'logs'
 log_file: 'statistics-reports.log'
