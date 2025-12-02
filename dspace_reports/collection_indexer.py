@@ -123,7 +123,7 @@ class CollectionIndexer(Indexer):
 
     def index_collection_views(self, time_period=None):
         """Index the collection views"""
-        
+
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
 
