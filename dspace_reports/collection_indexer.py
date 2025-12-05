@@ -1,7 +1,5 @@
 """Class for indexing collections"""
 
-import math
-
 from lib.database import Database
 from dspace_reports.indexer import Indexer
 
@@ -43,25 +41,23 @@ class CollectionIndexer(Indexer):
             # Insert the collection into the database
             with Database(self.config['database']) as db:
                 with db.cursor() as cursor:
-                    self.logger.debug(cursor.mogrify("INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (parent_community_name, collection_uuid, collection_name, collection_url)))
-                    cursor.execute("INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (parent_community_name, collection_uuid, collection_name, collection_url))
+                    self.logger.debug(cursor.mogrify("INSERT INTO collection_stats (collection_id, collection_name, collection_url, parent_community_name) VALUES (%s, %s, %s, %s)", (collection_uuid, collection_name, collection_url, parent_community_name)))
+                    cursor.execute("INSERT INTO collection_stats (collection_id, collection_name, collection_url, parent_community_name) VALUES (%s, %s, %s, %s)", (collection_uuid, collection_name, collection_url, parent_community_name))
                     db.commit()
 
             for time_period in self.time_periods:
                 self.logger.info("Indexing items for collection: %s (%s)", collection_name,
                                  collection_uuid)
-                self.index_collection_items(collection_uuid=collection_uuid,
-                                            time_period=time_period)
+                self.index_collection_items(collection_uuid=collection_uuid, time_period=time_period)
 
-        # Index all views and downloads of collections
-        for time_period in self.time_periods:
-            self.logger.info("Updating views statistics for collections during time period: %s",
+                # Index all views and downloads of collections
+                self.logger.info("Updating views statistics for collection during time period: %s",
                              time_period)
-            self.index_collection_views(time_period=time_period)
+                self.index_collection_views(collection_uuid=collection_uuid, time_period=time_period)
 
-            self.logger.info("Updating downloads statistics for collections during time period: %s",
-                             time_period)
-            self.index_collection_downloads(time_period=time_period)
+                self.logger.info("Updating downloads statistics for collection during time period: %s",
+                                time_period)
+                self.index_collection_downloads(collection_uuid=collection_uuid, time_period=time_period)
 
     def index_collection_items(self, collection_uuid=None, time_period=None):
         """Index the collection items"""
@@ -87,6 +83,8 @@ class CollectionIndexer(Indexer):
                 date_start = date_range[0]
                 date_end = date_range[1]
                 solr_query_params["fq"] = f"dc.date.accessioned_dt:[{date_start} TO {date_end}]"
+            else:
+                self.logger.error("Error creating date range.")
         else:
             self.logger.error("Error creating date range.")
 
@@ -95,7 +93,7 @@ class CollectionIndexer(Indexer):
 
         # Make call to Solr for items statistics
         response = self.solr.query_search(params=solr_query_params)
-        self.logger.info("Calling Solr total items in community: %s", response.url)
+        self.logger.info("Calling Solr items in collection: %s", response.url)
 
         results_total_items = 0
         try:
@@ -103,7 +101,7 @@ class CollectionIndexer(Indexer):
             results_total_items = response.json()["response"]["numFound"]
             self.logger.info("Solr - total items: %s", str(results_total_items))
         except TypeError:
-            self.logger.info("No collection items to index, returning.")
+            self.logger.info("No collection items to index.")
             return
 
         with Database(self.config['database']) as db:
@@ -121,233 +119,136 @@ class CollectionIndexer(Indexer):
                 # Commit changes
                 db.commit()
 
-    def index_collection_views(self, time_period=None):
+    def index_collection_views(self, collection_uuid=None, time_period=None):
         """Index the collection views"""
 
-        # Get Solr shards
-        shards = self.solr.get_statistics_shards()
-
-        # Default Solr params
-        solr_query_params = {
-            "q": f"type:2 AND owningColl:/.{{36}}/",
-            "fq": "-isBot:true AND statistics_type:view",
-            "fl": "owningColl",
-            "facet": "true",
-            "facet.field": "owningColl",
-            "facet.mincount": 1,
-            "facet.limit": 1,
-            "facet.offset": 0,
-            "stats": "true",
-            "stats.field": "owningColl",
-            "stats.calcdistinct": "true",
-            "shards": shards,
-            "rows": 0,
-            "wt": "json",
-        }
+        if collection_uuid is None or time_period is None:
+            return
 
         # Get date range for Solr query if time period is specified
+        solr_date_string = ""
         date_range = []
         date_range = self.get_date_range(time_period)
         if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
+            self.logger.info("Searching date range: %s - %s",
+                                date_range[0], date_range[1])
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
-                                          f"time:[{date_start} TO {date_end}]")
-        else:
-            self.logger.error("Error creating date range.")
+                solr_date_string = f"time:[{date_start} TO {date_end}]"
 
-        # Make call to Solr for views statistics
-        response = self.solr.query_statistics(params=solr_query_params)
-        self.logger.info("Calling Solr total collection views in collections: %s", response.url)
+        print(f"Indexing collection views for collection: {collection_uuid} " +
+              "during time: {solr_date_string}.")
 
-        try:
-            # Get total number of distinct facets (countDistinct)
-            results_total_num_facets = response.json()["stats"]["stats_fields"]["owningColl"][
-                "countDistinct"
-            ]
-        except TypeError:
-            self.logger.info("No collection views to index.")
-            return
-
-        # Divide results into "pages" and round up to next integer
-        results_per_page = 100
-        results_num_pages = math.ceil(results_total_num_facets / results_per_page)
-        results_current_page = 0
+        # Get Solr shards
+        shards = self.solr.get_statistics_shards()
 
         # Update database
         with Database(self.config['database']) as db:
             with db.cursor() as cursor:
-                while results_current_page <= results_num_pages:
-                    print(
-                        f"Indexing collection views (page {results_current_page + 1} " +
-                        f"of {results_num_pages + 1})"
-                    )
+                # Solr params
+                solr_query_params = {
+                    "q": f"owningColl:({collection_uuid})",
+                    "fq": f"type:2 AND -isBot:true AND statistics_type:view AND {solr_date_string}",
+                    "fl": "owningColl",
+                    "facet": "true",
+                    "facet.field": "owningColl",
+                    "facet.mincount": 1,
+                    "shards": shards,
+                    "rows": 0,
+                    "wt": "json",
+                    "json.nl": "map",  # return facets as a dict instead of a flat list
+                }
 
-                    # Solr params for current page
-                    solr_query_params = {
-                        "q": f"type:2 AND owningColl:/.{{36}}/",
-                        "fq": "-isBot:true AND statistics_type:view",
-                        "fl": "owningColl",
-                        "facet": "true",
-                        "facet.field": "owningColl",
-                        "facet.mincount": 1,
-                        "facet.limit": results_per_page,
-                        "facet.offset": results_current_page * results_per_page,
-                        "shards": shards,
-                        "rows": 0,
-                        "wt": "json",
-                        "json.nl": "map",
-                    }
+                response = self.solr.query_statistics(params=solr_query_params)
+                self.logger.info("Solr collection views query: %s", response.url)
 
-                    if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s",
-                                         date_range[0], date_range[1])
-                        if date_range[0] is not None and date_range[1] is not None:
-                            date_start = date_range[0]
-                            date_end = date_range[1]
-                            solr_query_params['q'] = (solr_query_params['q'] + " AND " +
-                                                      f"time:[{date_start} TO {date_end}]")
+                # Solr returns facets as a dict of dicts (see json.nl parameter)
+                views = response.json()["facet_counts"]["facet_fields"]
 
-                    response = self.solr.query_statistics(params=solr_query_params)
-                    self.logger.info("Solr collection views query: %s", response.url)
+                self.logger.debug("Found %s results in Solr", len(views))
 
-                    # Solr returns facets as a dict of dicts (see json.nl parameter)
-                    views = response.json()["facet_counts"]["facet_fields"]
-                    # Iterate over the facetField dict and get the UUIDs and views
-                    for collection_uuid, collection_views in views["owningColl"].items():
-                        if len(collection_uuid) == 36:
-                            if time_period == 'month':
-                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_last_month = %s WHERE collection_id = %s"), (collection_views, collection_uuid))
-                                cursor.execute("UPDATE collection_stats SET views_last_month = %s WHERE collection_id = %s", (collection_views, collection_uuid))
-                            elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_academic_year = %s WHERE collection_id = %s", (collection_views, collection_uuid)))
-                                cursor.execute("UPDATE collection_stats SET views_academic_year = %s WHERE collection_id = %s", (collection_views, collection_uuid))
-                            else:
-                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_total = %s WHERE collection_id = %s", (collection_views, collection_uuid)))
-                                cursor.execute("UPDATE collection_stats SET views_total = %s WHERE collection_id = %s", (collection_views, collection_uuid))
+                # Iterate over the facetField dict and get the UUIDs and views
+                for collection_id, collection_views in views["owningColl"].items():
+                    if collection_id == collection_uuid:
+                        if time_period == 'month':
+                            self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_last_month = %s WHERE collection_id = %s", (collection_views, collection_uuid)))
+                            cursor.execute("UPDATE collection_stats SET views_last_month = %s WHERE collection_id = %s", (collection_views, collection_uuid))
+                        elif time_period == 'year':
+                            self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_academic_year = %s WHERE collection_id = %s", (collection_views, collection_uuid)))
+                            cursor.execute("UPDATE collection_stats SET views_academic_year = %s WHERE collection_id = %s", (collection_views, collection_uuid))
                         else:
-                            self.logger.warning("owningColl value is not a UUID: %s",
-                                                collection_uuid)
+                            self.logger.debug(cursor.mogrify("UPDATE collection_stats SET views_total = %s WHERE collection_id = %s", (collection_views, collection_uuid)))
+                            cursor.execute("UPDATE collection_stats SET views_total = %s WHERE collection_id = %s", (collection_views, collection_uuid))
+                    
+                        # Commit changes to database
+                        db.commit()
+                    else:
+                        self.logger.warning("Solr query returned results for a different collection UUID: %s", collection_id)
 
-                    # Commit changes to database
-                    db.commit()
-
-                    results_current_page += 1
-
-
-    def index_collection_downloads(self, time_period=None):
+    def index_collection_downloads(self, collection_uuid=None, time_period=None):
         """Index the collection downloads"""
 
-        # Get Solr shards
-        shards = self.solr.get_statistics_shards()
-
-        # Default Solr params
-        solr_query_params = {
-            "q": f"type:0 AND owningColl:/.{{36}}/",
-            "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
-            "fl": "owningColl",
-            "facet": "true",
-            "facet.field": "owningColl",
-            "facet.mincount": 1,
-            "facet.limit": 1,
-            "facet.offset": 0,
-            "stats": "true",
-            "stats.field": "owningColl",
-            "stats.calcdistinct": "true",
-            "shards": shards,
-            "rows": 0,
-            "wt": "json",
-        }
+        if collection_uuid is None or time_period is None:
+            return
 
         # Get date range for Solr query if time period is specified
+        solr_date_string = ""
         date_range = []
         date_range = self.get_date_range(time_period)
         if len(date_range) == 2:
-            self.logger.info("Searching date range: %s - %s", date_range[0], date_range[1])
+            self.logger.info("Searching date range: %s - %s",
+                                date_range[0], date_range[1])
             if date_range[0] is not None and date_range[1] is not None:
                 date_start = date_range[0]
                 date_end = date_range[1]
-                solr_query_params['q'] = (solr_query_params['q'] + " AND " +
-                                          f"time:[{date_start} TO {date_end}]")
-        else:
-            self.logger.error("Error creating date range.")
+                solr_date_string = f"time:[{date_start} TO {date_end}]"
 
-        # Make call to Solr for views statistics
-        response = self.solr.query_statistics(params=solr_query_params)
-        self.logger.info("Calling Solr total collection downloads in collections: %s", response.url)
+        print(f"Indexing collection downloads for collection: {collection_uuid} " +
+              "during time: {solr_date_string}.")
 
-        try:
-            # get total number of distinct facets (countDistinct)
-            results_total_num_facets = response.json()["stats"]["stats_fields"]["owningColl"][
-                "countDistinct"
-            ]
-        except TypeError:
-            self.logger.info("No collection downloads to index.")
-            return
-
-        results_per_page = 100
-        results_num_pages = math.ceil(results_total_num_facets / results_per_page)
-        results_current_page = 0
+        # Get Solr shards
+        shards = self.solr.get_statistics_shards()
 
         # Update database
         with Database(self.config['database']) as db:
             with db.cursor() as cursor:
-                while results_current_page <= results_num_pages:
-                    # "pages" are zero based, but one based is more human readable
-                    print(
-                        f"Indexing collection downloads (page {results_current_page + 1} " +
-                        f"of {results_num_pages + 1})"
-                    )
+                # Solr params
+                solr_query_params = {
+                    "q": f"owningColl:({collection_uuid})",
+                    "fq": f"type:0 AND -isBot:true AND statistics_type:view AND bundleName:ORIGINAL AND {solr_date_string}",
+                    "fl": "owningColl",
+                    "facet": "true",
+                    "facet.field": "owningColl",
+                    "facet.mincount": 1,
+                    "shards": shards,
+                    "rows": 0,
+                    "wt": "json",
+                    "json.nl": "map",  # return facets as a dict instead of a flat list
+                }
 
-                    # Solr params for current page
-                    solr_query_params = {
-                        "q": f"type:0 AND owningColl:/.{{36}}/",
-                        "fq": "-isBot:true AND statistics_type:view AND bundleName:ORIGINAL",
-                        "fl": "owningColl",
-                        "facet": "true",
-                        "facet.field": "owningColl",
-                        "facet.mincount": 1,
-                        "facet.limit": results_per_page,
-                        "facet.offset": results_current_page * results_per_page,
-                        "shards": shards,
-                        "rows": 0,
-                        "wt": "json",
-                        "json.nl": "map",
-                    }
+                response = self.solr.query_statistics(params=solr_query_params)
+                self.logger.info("Solr collection downloads query: %s", response.url)
 
-                    if len(date_range) == 2:
-                        self.logger.info("Searching date range: %s - %s", date_range[0],
-                                         date_range[1])
-                        if date_range[0] is not None and date_range[1] is not None:
-                            date_start = date_range[0]
-                            date_end = date_range[1]
-                            solr_query_params['q'] = (solr_query_params['q'] + " AND " +
-                                                      f"time:[{date_start} TO {date_end}]")
+                # Solr returns facets as a dict of dicts (see json.nl parameter)
+                downloads = response.json()["facet_counts"]["facet_fields"]
 
-                    response = self.solr.query_statistics(params=solr_query_params)
-                    self.logger.info("Solr collection downloads query: %s", response.url)
+                self.logger.debug("Found %s results in Solr", len(downloads))
 
-                    # Solr returns facets as a dict of dicts (see json.nl parameter)
-                    downloads = response.json()["facet_counts"]["facet_fields"]
-                    # Iterate over the facetField dict and get the ids and views
-                    for collection_uuid, collection_downloads in downloads["owningColl"].items():
-                        if len(collection_uuid) == 36:
-                            if time_period == 'month':
-                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_last_month = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
-                                cursor.execute("UPDATE collection_stats SET downloads_last_month = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
-                            elif time_period == 'year':
-                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_academic_year = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
-                                cursor.execute("UPDATE collection_stats SET downloads_academic_year = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
-                            else:
-                                self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_total = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
-                                cursor.execute("UPDATE collection_stats SET downloads_total = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
+                # Iterate over the facetField dict and get the UUIDs and views
+                for collection_id, collection_downloads in downloads["owningColl"].items():
+                    if collection_id == collection_uuid:
+                        if time_period == 'month':
+                            self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_last_month = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
+                            cursor.execute("UPDATE collection_stats SET downloads_last_month = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
+                        elif time_period == 'year':
+                            self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_academic_year = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
+                            cursor.execute("UPDATE collection_stats SET downloads_academic_year = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
                         else:
-                            self.logger.warning("owningColl value is not a UUID: %s",
-                                                collection_uuid)
-
-                    # Commit changes to database
-                    db.commit()
-
-                    results_current_page += 1
+                            self.logger.debug(cursor.mogrify("UPDATE collection_stats SET downloads_total = %s WHERE collection_id = %s", (collection_downloads, collection_uuid)))
+                            cursor.execute("UPDATE collection_stats SET downloads_total = %s WHERE collection_id = %s", (collection_downloads, collection_uuid))
+                    
+                        # Commit changes to database
+                        db.commit()
+                    else:
+                        self.logger.warning("Solr query returned results for a different collection UUID: %s", collection_id)
