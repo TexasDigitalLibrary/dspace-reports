@@ -95,7 +95,7 @@ class CollectionIndexer(Indexer):
 
         # Make call to Solr for items statistics
         response = self.solr.query_search(params=solr_query_params)
-        self.logger.info("Calling Solr total items in community: %s", response.url)
+        self.logger.info("Calling Solr total items in collection: %s", response.url)
 
         results_total_items = 0
         try:
