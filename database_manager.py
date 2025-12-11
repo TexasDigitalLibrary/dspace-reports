@@ -80,7 +80,7 @@ class DatabaseManager():
         logger.info('Creating tables...')
 
         # Create statistics tables
-        with Database(config=config['statistics_db']) as db:
+        with Database(config=config['database']) as db:
             with db.cursor() as cursor:
                 # Create new statistics tables
                 commands = (
@@ -168,7 +168,7 @@ class DatabaseManager():
         logger.info('Dropping tables...')
 
         # Drop statistics tables
-        with Database(config=config['statistics_db']) as db:
+        with Database(config=config['database']) as db:
             with db.cursor() as cursor:
                 # Create new statistics tables
                 commands = (
@@ -200,7 +200,7 @@ class DatabaseManager():
         tables_exist = False
 
         # Check if statistics tables exist
-        with Database(config=config['statistics_db']) as db:
+        with Database(config=config['database']) as db:
             with db.cursor() as cursor:
                 cursor.execute("SELECT * FROM information_schema.tables WHERE " +
                                "table_name='repository_stats'")

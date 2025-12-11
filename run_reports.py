@@ -116,7 +116,7 @@ class RunReports():
 
         self.logger.debug("Creating CSV file for report %s...", report['table'])
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 self.logger.debug(cursor.mogrify(sql.SQL("SELECT * FROM {} ORDER BY {} ASC").format(sql.Identifier(report['table']), sql.Identifier(report['orderBy'],))))
                 cursor.execute(sql.SQL("SELECT * FROM {} ORDER BY {} ASC").format(sql.Identifier(report['table']), sql.Identifier(report['orderBy'],)))

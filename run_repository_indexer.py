@@ -17,7 +17,6 @@ class RunRepositoryIndexer():
             sys.exit(1)
 
         self.config = config
-        self.solr_server = config['solr_server']
 
         # Set up logging
         if logger is not None:

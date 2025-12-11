@@ -41,7 +41,7 @@ class CollectionIndexer(Indexer):
                 collection_name = collection_name[0:251] + "..."
 
             # Insert the collection into the database
-            with Database(self.config['statistics_db']) as db:
+            with Database(self.config['database']) as db:
                 with db.cursor() as cursor:
                     self.logger.debug(cursor.mogrify("INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (parent_community_name, collection_uuid, collection_name, collection_url)))
                     cursor.execute("INSERT INTO collection_stats (parent_community_name, collection_id, collection_name, collection_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (parent_community_name, collection_uuid, collection_name, collection_url))
@@ -69,10 +69,6 @@ class CollectionIndexer(Indexer):
         if collection_uuid is None or time_period is None:
             return
 
-        # Create base Solr URL
-        solr_url = self.solr_server + "/search/select"
-        self.logger.debug("TDL Solr_URL: %s", solr_url)
-
         # Default Solr params
         solr_query_params = {
             "q": "search.resourcetype:Item",
@@ -98,8 +94,8 @@ class CollectionIndexer(Indexer):
         solr_query_params['q'] = solr_query_params['q'] + " AND location.coll:" + collection_uuid
 
         # Make call to Solr for items statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
-        self.logger.info("Calling Solr total items in community: %s", response.url)
+        response = self.solr.query_search(params=solr_query_params)
+        self.logger.info("Calling Solr total items in collection: %s", response.url)
 
         results_total_items = 0
         try:
@@ -110,7 +106,7 @@ class CollectionIndexer(Indexer):
             self.logger.info("No collection items to index, returning.")
             return
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 if time_period == 'month':
                     self.logger.debug(cursor.mogrify("UPDATE collection_stats SET items_last_month = %s WHERE collection_id = %s", (results_total_items, collection_uuid)))
@@ -127,9 +123,6 @@ class CollectionIndexer(Indexer):
 
     def index_collection_views(self, time_period=None):
         """Index the collection views"""
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
@@ -166,7 +159,7 @@ class CollectionIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for views statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Calling Solr total collection views in collections: %s", response.url)
 
         try:
@@ -184,7 +177,7 @@ class CollectionIndexer(Indexer):
         results_current_page = 0
 
         # Update database
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 while results_current_page <= results_num_pages:
                     print(
@@ -217,7 +210,7 @@ class CollectionIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr collection views query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
@@ -249,9 +242,6 @@ class CollectionIndexer(Indexer):
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Default Solr params
         solr_query_params = {
@@ -285,7 +275,7 @@ class CollectionIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for views statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Calling Solr total collection downloads in collections: %s", response.url)
 
         try:
@@ -302,7 +292,7 @@ class CollectionIndexer(Indexer):
         results_current_page = 0
 
         # Update database
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 while results_current_page <= results_num_pages:
                     # "pages" are zero based, but one based is more human readable
@@ -336,7 +326,7 @@ class CollectionIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr collection downloads query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)

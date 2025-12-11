@@ -19,7 +19,6 @@ class Indexer():
 
         self.config = config
         self.base_url = config['dspace_server'] + '/handle/'
-        self.solr_server = config['solr_server']
 
         # Set up logging
         if logger is not None:
@@ -35,7 +34,7 @@ class Indexer():
             sys.exit(1)
 
         # Create Solr server object
-        self.solr = DSpaceSolr(solr_server=config['solr_server'])
+        self.solr = DSpaceSolr(config=config['solr'])
         if self.solr is None:
             self.logger.error("Unable to create Indexer due to earlier failures creating a " +
                               "connection to Solr.")

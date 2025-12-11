@@ -185,7 +185,7 @@ class DSpaceRestApi():
 
             communities_response = self.rest_call(url = communities_url, params = params)
             if communities_response is not None and '_embedded' in communities_response:
-                # Get ccommunities from this page of results
+                # Get communities from this page of results
                 if 'communities' in communities_response['_embedded']:
                     self.logger.info(communities_response['_embedded']['communities'])
                     for community_json in communities_response['_embedded']['communities']:

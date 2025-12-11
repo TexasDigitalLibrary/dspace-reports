@@ -17,7 +17,7 @@ class ItemIndexer(Indexer):
         self.time_periods = ['month', 'year', 'all']
 
         # Set crawl delay from config
-        self.delay = config['delay']
+        self.crawl_delay = config['crawl_delay']
 
     def index(self):
         # Get list of identifiers from REST API
@@ -29,7 +29,7 @@ class ItemIndexer(Indexer):
         count_items = 0
 
         # Iterate over records and call REST API for additional metadata
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
                 for item in items:
                     count_items += 1
@@ -37,6 +37,8 @@ class ItemIndexer(Indexer):
                     # Get item metadata
                     item_uuid = item['uuid']
                     item_name = item['name']
+
+                    self.logger.info("Item : %s (%s)", item_name, item_uuid)
 
                     # Attempt to get collection name
                     item_owning_collection_name = "Unknown"
@@ -61,10 +63,28 @@ class ItemIndexer(Indexer):
                     else:
                         item_name = "Untitled"
 
-                    # Create handle URL for item
-                    item_url = self.base_url + item['handle']
+                    # Create Handle URL for item
+                    item_url = ''
+                    if 'handle' in item and item['handle'] is not None:
+                        item_url = self.base_url + item['handle']
+                    else:
+                        self.logger.warning("Item is missing a handle.")
+                        if 'metadata' in item:
+                            metadata = item['metadata']
+                            if 'dc.identifier.uri' in metadata:
+                                self.logger.debug("The dc.identifier.uri key is in the metadata.")
+                                item_url_metadata = metadata['dc.identifier.uri'][0]
+                                if 'value' in item_url_metadata:
+                                    item_url = item_url_metadata['value']
+                            else:
+                                self.logger.debug("The dc.identifier.uri key is not in the metadata")
 
-                    self.logger.debug(cursor.mogrify("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url)))
+                    if len(item_url) == 0:
+                        self.logger.warning("The item URL is empty.")
+                        item_url = "Unable to find handle/URL"
+
+                    self.logger.debug("Item URL: %s", item_url)
+
                     cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url))
                     db.commit()
 
@@ -77,9 +97,6 @@ class ItemIndexer(Indexer):
 
     def index_item_views(self, time_period='all'):
         """Index the item views"""
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
@@ -116,7 +133,7 @@ class ItemIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for total views statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Solr total item views query: %s", response.url)
 
         try:
@@ -133,7 +150,7 @@ class ItemIndexer(Indexer):
         results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
 
                 while results_current_page <= results_num_pages:
@@ -167,7 +184,7 @@ class ItemIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr item views query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
@@ -191,16 +208,13 @@ class ItemIndexer(Indexer):
                     # Commit changes to database
                     db.commit()
 
-                    if self.delay:
-                        sleep(self.delay)
+                    if self.crawl_delay:
+                        sleep(self.crawl_delay)
 
                     results_current_page += 1
 
     def index_item_downloads(self, time_period='all'):
         """Index the item downloads"""
-
-        # Create base Solr url
-        solr_url = self.solr_server + "/statistics/select"
 
         # Get Solr shards
         shards = self.solr.get_statistics_shards()
@@ -237,7 +251,7 @@ class ItemIndexer(Indexer):
             self.logger.error("Error creating date range.")
 
         # Make call to Solr for download statistics
-        response = self.solr.call(url=solr_url, params=solr_query_params)
+        response = self.solr.query_statistics(params=solr_query_params)
         self.logger.info("Solr total item downloads query: %s", response.url)
 
         try:
@@ -253,7 +267,7 @@ class ItemIndexer(Indexer):
         results_num_pages = math.ceil(results_total_num_facets / results_per_page)
         results_current_page = 0
 
-        with Database(self.config['statistics_db']) as db:
+        with Database(self.config['database']) as db:
             with db.cursor() as cursor:
 
                 while results_current_page <= results_num_pages:
@@ -288,7 +302,7 @@ class ItemIndexer(Indexer):
                             solr_query_params['q'] = (solr_query_params['q'] + " AND " +
                                                       f"time:[{date_start} TO {date_end}]")
 
-                    response = self.solr.call(url=solr_url, params=solr_query_params)
+                    response = self.solr.query_statistics(params=solr_query_params)
                     self.logger.info("Solr item downloads query: %s", response.url)
 
                     # Solr returns facets as a dict of dicts (see json.nl parameter)
@@ -312,7 +326,7 @@ class ItemIndexer(Indexer):
                     # Commit changes to database
                     db.commit()
 
-                    if self.delay:
-                        sleep(self.delay)
+                    if self.crawl_delay:
+                        sleep(self.crawl_delay)
 
                     results_current_page += 1
