@@ -34,15 +34,22 @@ class DSpaceRestApi():
         self.token = None
         self.get_token()
 
-        self.limit = 100
+        self.user_agent = (
+                "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/39.0.2171.95 Safari/537.36"
+        )
+        self.auth_request_headers = {"User-Agent": self.user_agent}
 
-        self.auth_headers = {}
-        self.request_headers = {'Content-type': 'application/json'}
+        self.request_headers = {
+            'Content-type': 'application/json',
+            'User-Agent': self.user_agent,
+        }
         self.cookies = {}
 
         # Authenticate using parameters in set here
         self.authenticated = self.authenticate()
         if self.authenticated is False:
+            self.logger.error('Unable to authenticate connection to REST API.')
             return None
 
         # Test connection to REST API
@@ -55,11 +62,10 @@ class DSpaceRestApi():
         if 'DSPACE-XSRF-TOKEN' in token_response.headers:
             self.token = token_response.headers['DSPACE-XSRF-TOKEN']
             self.session.headers.update({'X-XSRF-Token': self.token})
-            self.session.cookies.update({'X-XSRF-Token': self.token})
-            self.logger.debug("Updating CSRF token to: %s", self.token)
+            # self.session.cookies.update({'X-XSRF-Token': self.token})
+            # self.logger.info("Setting CSRF token to: %s", self.token)
         else:
-            self.logger.info('No DSPACE-XSRF-TOKEN in the API response.')
-
+            self.logger.error('No DSPACE-XSRF-TOKEN in the API security/csrf token response.')
 
     def authenticate(self):
         """Authenticate a REST API user"""
@@ -70,8 +76,14 @@ class DSpaceRestApi():
         data = {'user':self.username, 'password':self.password}
 
         # Attempt to log in to REST API
-        login_response = self.session.post(self.login_url, headers=self.auth_headers, data=data)
-        self.logger.info("Calling REST API: %s", login_response.url)
+        login_response = self.session.post(
+            self.login_url,
+            headers=self.auth_request_headers,
+            data=data
+        )
+        self.logger.info("Called REST API: %s", login_response.url)
+
+        self.update_token(login_response)
 
         if login_response.status_code == 200:
             self.logger.info("Successfully authenticated: %s", login_response.status_code)
@@ -83,8 +95,10 @@ class DSpaceRestApi():
 
             return True
 
-        self.logger.info("REST API authentication failed: %s", login_response.status_code)
-        self.logger.info(login_response.text)
+        self.logger.error("REST API authentication with user %s failed: %s",
+                          self.username, login_response.status_code)
+        self.logger.error(login_response.text)
+
         return False
 
     def test_connection(self):
@@ -140,6 +154,8 @@ class DSpaceRestApi():
         else:
             response = self.session.post(url, data=data, params=params,
                                          cookies=self.cookies, headers=headers)
+
+        self.update_token(response)
 
         if response.status_code == 200:
             return response.json()
@@ -429,16 +445,17 @@ class DSpaceRestApi():
         item_owning_collection = self.rest_call(url = item_owning_collection_url)
         return item_owning_collection
 
-    def update_token(self, req):
-        """Update CSRF token"""
-
+    def update_token(self, r):
+        """Get CSRF token"""
         if not self.session:
-            self.logger.debug('Session state not found, setting...')
+            self.logger.debug("Session state not found, setting...")
             self.session = requests.Session()
-        if 'DSPACE-XSRF-TOKEN' in req.headers:
-            t = req.headers['DSPACE-XSRF-TOKEN']
-            self.logger.debug('Updating XSRF token to %s', t)
 
-            # Update headers and cookies
-            self.session.headers.update({'X-XSRF-Token': t})
-            self.session.cookies.update({'X-XSRF-Token': t})
+        if 'DSPACE-XSRF-TOKEN' in r.headers:
+            t = r.headers["DSPACE-XSRF-TOKEN"]
+            if t is not None and self.token != t:
+                self.logger.info("Updating CSRF token to: %s", self.token)
+                self.session.headers.update({'X-XSRF-Token': self.token})
+                # self.session.cookies.update({'X-XSRF-Token': self.token})
+        else:
+            self.logger.debug('No DSPACE-XSRF-TOKEN in the API response.')
