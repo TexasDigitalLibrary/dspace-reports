@@ -32,7 +32,7 @@ class CollectionIndexer(Indexer):
             parent_community_name = "Unknown"
             parent_community = self.rest.get_collection_parent_community(
                 collection_uuid=collection_uuid)
-            if 'name' in parent_community:
+            if parent_community is not None and 'name' in parent_community:
                 parent_community_name = parent_community['name']
 
             if len(collection_name) > 255:
