@@ -34,6 +34,9 @@ class DSpaceRestApi():
         self.token = None
         self.get_token()
 
+        # Set timeout
+        self.timeout = 60
+
         self.user_agent = (
                 "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/39.0.2171.95 Safari/537.36"
@@ -150,10 +153,18 @@ class DSpaceRestApi():
         self.logger.debug("Calling REST API with URL: %s", url)
 
         if call_type == 'GET':
-            response = self.session.get(url, params=params, headers=headers, cookies=self.cookies)
+            response = self.session.get(url,
+                                        params=params,
+                                        headers=headers,
+                                        cookies=self.cookies,
+                                        timeout=self.timeout)
         else:
-            response = self.session.post(url, data=data, params=params,
-                                         cookies=self.cookies, headers=headers)
+            response = self.session.post(url,
+                                         data=data,
+                                         params=params,
+                                         cookies=self.cookies,
+                                         headers=headers,
+                                         timeout=self.timeout)
 
         self.update_token(response)
 
@@ -205,6 +216,10 @@ class DSpaceRestApi():
                 if 'communities' in communities_response['_embedded']:
                     self.logger.info(communities_response['_embedded']['communities'])
                     for community_json in communities_response['_embedded']['communities']:
+                        self.logger.debug("Adding community %s (%s) (%s)",
+                                         community_json['name'],
+                                         community_json['uuid'],
+                                         community_json['handle'])
                         communities.append(community_json)
 
                 # Check API response for amount of total communities and pages
@@ -296,6 +311,10 @@ class DSpaceRestApi():
                 if 'collections' in collections_response['_embedded']:
                     self.logger.info(collections_response['_embedded']['collections'])
                     for collection_json in collections_response['_embedded']['collections']:
+                        self.logger.debug("Adding collection %s (%s) (%s)",
+                                         collection_json['name'],
+                                         collection_json['uuid'],
+                                         collection_json['handle'])
                         collections.append(collection_json)
 
                 # Check API response for amount of total collections and pages
