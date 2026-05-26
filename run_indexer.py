@@ -37,25 +37,33 @@ class RunIndexer():
         repository_indexer = RepositoryIndexer(config=self.config, logger=self.logger)
 
         # Index repository stats from Solr
+        self.logger.info("Running repository indexer...")
         repository_indexer.index()
+        self.logger.info("Finished running repository indexer.")
 
         # Create communities stats indexer
         community_indexer = CommunityIndexer(config=self.config, logger=self.logger)
 
         # Index communities stats from Solr
+        self.logger.info("Running community indexer...")
         community_indexer.index()
+        self.logger.info("Finished running community indexing.")
 
         # Create collections stats indexer
         collection_indexer = CollectionIndexer(config=self.config, logger=self.logger)
 
         # Index collections stats from Solr
+        self.logger.info("Running collection indexer...")
         collection_indexer.index()
+        self.logger.info("Finished running collection indexing.")
 
         # Create items stats indexer
         item_indexer = ItemIndexer(config=self.config, logger=self.logger)
 
         # Index items stats from Solr
+        self.logger.info("Running item indexer...")
         item_indexer.index()
+        self.logger.info("Finished running item indexing.")
 
         self.logger.info("Finished running all indexing.")
 
