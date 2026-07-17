@@ -77,7 +77,20 @@ class ItemIndexer(Indexer):
                                 if 'value' in item_url_metadata:
                                     item_url = item_url_metadata['value']
                             else:
-                                self.logger.debug("The dc.identifier.uri key is not in the metadata")
+                                self.logger.debug("The dc.identifier.uri key is not in"
+                                                  + " the metadata")
+
+                    # Add any additional fields
+                    item_date_issued = ''
+                    if 'metadata' in item:
+                        metadata = item['metadata']
+                        if 'dc.date.issued' in metadata:
+                            self.logger.debug("The dc.date.issued key is in the metadata.")
+                            item_url_metadata = metadata['dc.date.issued'][0]
+                            if 'value' in item_url_metadata:
+                                item_date_issued = item_url_metadata['value']
+                        else:
+                            self.logger.debug("The dc.date.issued key is not in the metadata")
 
                     if len(item_url) == 0:
                         self.logger.warning("The item URL is empty.")
@@ -85,7 +98,7 @@ class ItemIndexer(Indexer):
 
                     self.logger.debug("Item URL: %s", item_url)
 
-                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url))
+                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_date_issued, item_url) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_date_issued, item_url))
                     db.commit()
 
         for time_period in self.time_periods:
