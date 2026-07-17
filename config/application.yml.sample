@@ -14,6 +14,7 @@ database:
 solr:
     url: 'http://localhost:8983/solr'
     connection_timeout: 300
+item_author_fields: 'dc.contributor.author, dc.creator'
 work_dir: '/tmp'
 crawl_delay: 0
 create_zip_archive: false
