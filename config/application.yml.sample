@@ -1,8 +1,8 @@
 dspace_name: 'MyDSpace'
-dspace_server: 'http://localhost:8080'
-oai_server: 'http://localhost:8080/oai'
+dspace_server: 'https://mydspace.edu'
+oai_server: 'http://localhost:8080/server/oai'
 rest_server: 
-    url: 'https://dspace.org/rest'
+    url: 'http://localhost:8080/server/api'
     username: 'admin@example.org'
     password: 'password'
 database:
