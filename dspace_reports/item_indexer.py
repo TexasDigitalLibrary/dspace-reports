@@ -108,22 +108,37 @@ class ItemIndexer(Indexer):
 
                     self.logger.debug("The item authors: %s", str(item_authors))
 
+                    # Add date accessioned
+                    item_date_accessioned = ''
+                    if 'metadata' in item:
+                        metadata = item['metadata']
+                        if 'dc.date.accessioned' in metadata:
+                            self.logger.debug("The dc.date.accessioned key is in the metadata.")
+                            item_accessioned_metadata = metadata['dc.date.accessioned'][0]
+                            if 'value' in item_accessioned_metadata:
+                                item_date_accessioned_value = item_accessioned_metadata['value']
+                                t_index = item_date_accessioned_value.find('T')
+                                item_date_accessioned = item_date_accessioned_value[:t_index]
+                        else:
+                            self.logger.debug("The dc.date.accessioned key is not in the metadata.")
+
                     # Add date issued
                     item_date_issued = ''
                     if 'metadata' in item:
                         metadata = item['metadata']
                         if 'dc.date.issued' in metadata:
                             self.logger.debug("The dc.date.issued key is in the metadata.")
-                            item_url_metadata = metadata['dc.date.issued'][0]
-                            if 'value' in item_url_metadata:
-                                item_date_issued = item_url_metadata['value']
+                            item_issued_metadata = metadata['dc.date.issued'][0]
+                            if 'value' in item_issued_metadata:
+                                item_date_issued = item_issued_metadata['value']
                         else:
-                            self.logger.debug("The dc.date.issued key is not in the metadata")
+                            self.logger.debug("The dc.date.issued key is not in the metadata.")
+
 
 
                     self.logger.debug("Item URL: %s", item_url)
 
-                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_authors, item_date_issued, item_url) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_authors, item_date_issued, item_url))
+                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_authors, item_date_accessioned, item_date_issued, item_url) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_authors, item_date_accessioned, item_date_issued, item_url))
                     db.commit()
 
         for time_period in self.time_periods:
