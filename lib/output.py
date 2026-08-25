@@ -108,7 +108,18 @@ class Output():
 
         # Create Excel workbook
         self.logger.info("Creating Excel file: %s", output_file_path)
-        workbook = xlsxwriter.Workbook(output_file_path, {'strings_to_numbers': True})
+        workbook_options = {
+            'constant_memory': True,
+            'strings_to_numbers': True,
+            'strings_to_formulas': False,
+            'nan_inf_to_errors': True,
+            'default_date_format': 'yyyy-mm-dd'
+        }
+
+        strings_to_urls = self.set_strings_to_urls(worksheet_files)
+        workbook_options['strings_to_urls'] = strings_to_urls
+
+        workbook = xlsxwriter.Workbook(output_file_path, workbook_options)
 
         # Add worksheet(s)
         for worksheet_file in worksheet_files:
@@ -133,6 +144,25 @@ class Output():
 
         self.logger.info("Saved report to Excel file %s.", output_file_path)
         return output_file_path
+
+    def set_strings_to_urls(self, worksheet_files=None):
+        """"Check for any worksheets with more lines (URLs) than the Excel limit of 65,530"""
+
+        # Default to True
+        strings_to_urls = True
+
+        if worksheet_files is None:
+            worksheet_files = []
+
+        # Find max line count of every worksheet.
+        # If any maximum is over 65,530 lines then set strings_to_urls to False.
+        for worksheet_file in worksheet_files:
+            with open(worksheet_file, 'r', encoding='utf8') as f:
+                line_count = sum(1 for _ in f)
+                if line_count > 65530:
+                    strings_to_urls = False
+
+        return strings_to_urls
 
     def save_report_zip_archive(self, output_file_path=None, excel_report_file=None):
         """"Save stats report to zip file"""

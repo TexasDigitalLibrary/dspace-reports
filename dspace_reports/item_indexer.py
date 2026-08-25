@@ -19,6 +19,10 @@ class ItemIndexer(Indexer):
         # Set crawl delay from config
         self.crawl_delay = config['crawl_delay']
 
+        # Get author field(s) from configuration
+        author_fields_string = config['item_author_fields']
+        self.author_fields = author_fields_string.split(',')
+
     def index(self):
         # Get list of identifiers from REST API
         items = self.rest.get_items()
@@ -77,15 +81,64 @@ class ItemIndexer(Indexer):
                                 if 'value' in item_url_metadata:
                                     item_url = item_url_metadata['value']
                             else:
-                                self.logger.debug("The dc.identifier.uri key is not in the metadata")
+                                self.logger.debug("The dc.identifier.uri key is not in"
+                                                  + " the metadata")
 
+                    # Fall back to default string if no Handle URL
                     if len(item_url) == 0:
                         self.logger.warning("The item URL is empty.")
                         item_url = "Unable to find handle/URL"
 
+                    # Add author(s)
+                    item_authors = ''
+                    if 'metadata' in item:
+                        metadata = item['metadata']
+                        for author_field in self.author_fields:
+                            if author_field in metadata:
+                                self.logger.debug("The %s author field is in the metadata.",
+                                                  str(author_field))
+                                author_field_authors = metadata[author_field]
+                                for author_field_author in author_field_authors:
+                                    if 'value' in author_field_author:
+                                        item_authors += author_field_author['value'] + "; "
+
+                    item_authors = item_authors.removesuffix("; ")
+                    if len(item_authors) > 100:
+                        item_authors = item_authors[:97] + "..."
+
+                    self.logger.debug("The item authors: %s", str(item_authors))
+
+                    # Add date accessioned
+                    item_date_accessioned = ''
+                    if 'metadata' in item:
+                        metadata = item['metadata']
+                        if 'dc.date.accessioned' in metadata:
+                            self.logger.debug("The dc.date.accessioned key is in the metadata.")
+                            item_accessioned_metadata = metadata['dc.date.accessioned'][0]
+                            if 'value' in item_accessioned_metadata:
+                                item_date_accessioned_value = item_accessioned_metadata['value']
+                                t_index = item_date_accessioned_value.find('T')
+                                item_date_accessioned = item_date_accessioned_value[:t_index]
+                        else:
+                            self.logger.debug("The dc.date.accessioned key is not in the metadata.")
+
+                    # Add date issued
+                    item_date_issued = ''
+                    if 'metadata' in item:
+                        metadata = item['metadata']
+                        if 'dc.date.issued' in metadata:
+                            self.logger.debug("The dc.date.issued key is in the metadata.")
+                            item_issued_metadata = metadata['dc.date.issued'][0]
+                            if 'value' in item_issued_metadata:
+                                item_date_issued = item_issued_metadata['value']
+                        else:
+                            self.logger.debug("The dc.date.issued key is not in the metadata.")
+
+
+
                     self.logger.debug("Item URL: %s", item_url)
 
-                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_url) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_url))
+                    cursor.execute("INSERT INTO item_stats (collection_name, item_id, item_name, item_authors, item_date_accessioned, item_date_issued, item_url) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", (item_owning_collection_name, item_uuid, item_name, item_authors, item_date_accessioned, item_date_issued, item_url))
                     db.commit()
 
         for time_period in self.time_periods:
